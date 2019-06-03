@@ -34,25 +34,28 @@ import static com.example.permission.utils.GotoUtil.*;
 public class PermissionHelper {
 
     private static final String TAG_PERMISSION_FRAGMENT = PermissionFragment.class.getName();
-    private final Activity mActivity;
+    private Activity mActivity;
     private static PermissionHelper sinstance = null;
 
-    private PermissionHelper(Activity activity){
-        mActivity = activity;
-    }
+    private PermissionHelper(){}
 
-    public static PermissionHelper getInstance(Activity activity){
+    public static PermissionHelper getInstance(){
         if(sinstance == null){
             synchronized (PermissionHelper.class){
                 PermissionHelper permissionHelper;
                 if(sinstance == null){
-                    permissionHelper = new PermissionHelper(activity);
+                    permissionHelper = new PermissionHelper();
                     sinstance = permissionHelper;
                 }
             }
-            sinstance = new PermissionHelper(activity);
+            sinstance = new PermissionHelper();
         }
         return sinstance;
+    }
+
+    public PermissionHelper with(Activity activity){
+        this.mActivity = activity;
+        return this;
     }
 
     /**
@@ -205,6 +208,7 @@ public class PermissionHelper {
     }
 
     private PermissionFragment getPermissionFragment(Activity activity){
+        if(mActivity == null) throw new NullPointerException("The Activity is null, must call with(Activity acitity) after getInstance()!");
         if(!(activity instanceof FragmentActivity)) throw new IllegalArgumentException("The argument passed must be FragmentActivity or it's sub class");
         FragmentManager manager = ((FragmentActivity)activity).getSupportFragmentManager();
         PermissionFragment fragment = (PermissionFragment) manager.findFragmentByTag(TAG_PERMISSION_FRAGMENT);

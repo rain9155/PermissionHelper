@@ -1,2 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.permission" />
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.permission">
+
+    <application />
+
+</manifest>
