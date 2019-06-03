@@ -30,7 +30,8 @@ public interface IPermissionsCallback {
      * 权限拒绝的回调，你可以选择重写它并在里面处理逻辑，如引导用户到权限申请页同意一个或多个权限
      * 只有一种情况：
      * （1）没用户点击拒绝授权一个或多个权限，并勾选了don’t ask again
-     * @param permissions 用户拒绝授权并勾选了don’t ask again的权限列表
+     * @param permissionsDenied 用户拒绝授权的权限列表
+     * @param permissionsReject 用户拒绝授权并勾选了don’t ask again的权限列表
      */
-    default void onDeniedAndReject(List<Permission> permissions){}//没有授权并勾选了don’t ask again
+    default void onDeniedAndReject(List<Permission> permissionsDenied, List<Permission> permissionsReject){}
 }

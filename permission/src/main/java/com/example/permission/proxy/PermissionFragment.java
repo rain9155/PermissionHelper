@@ -1,6 +1,7 @@
 package com.example.permission.proxy;
 
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -19,7 +20,7 @@ import androidx.fragment.app.Fragment;
 import com.example.permission.bean.Permission;
 import com.example.permission.bean.SpecialPermission;
 import com.example.permission.callback.IPermissionsResultCallback;
-import com.example.permission.utils.PermissionUtil;
+import com.example.permission.utils.SpecialUtil;
 
 import java.util.Random;
 
@@ -54,18 +55,13 @@ public class PermissionFragment extends Fragment {
         requestPermissions(permissions, requestCode);
     }
 
+    @TargetApi(Build.VERSION_CODES.O)
     @RequiresApi(api = Build.VERSION_CODES.M)
     public void requestSpecialPermission(SpecialPermission specialPermission, @NonNull IPermissionsResultCallback callback){
         int requestCode = makeRequestCode();
         mPermissionsResult.put(requestCode, callback);
         mSpecialPermissions.put(requestCode, specialPermission);
         requestSpecialPermission(specialPermission, requestCode);
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.M)
-    public void requestPermissions(@NonNull String[] permissions, int requestCode, @NonNull IPermissionsResultCallback callback){
-        mPermissionsResult.put(requestCode, callback);
-        requestPermissions(permissions, requestCode);
     }
 
 
@@ -102,22 +98,12 @@ public class PermissionFragment extends Fragment {
             mPermissionsResult.remove(requestCode);
                 SpecialPermission special = mSpecialPermissions.get(requestCode);
                 mSpecialPermissions.remove(requestCode);
-                if(requestCode == RESULT_OK){
-                boolean isGranted = false;
-                Permission permission;
-                switch (special){
-                    case INSTALL_UNKNOWN_APP:
-                        isGranted = PermissionUtil.checkSpecialInstallUnkownApp(mActivity);
-                        break;
-                    default:
-                        break;
-                }
-                permission = new Permission(isGranted);
+                Permission permission = new Permission(SpecialUtil.checkSpecialPermissions(special, mActivity), special);
                 callback.OnPermissionsResult(new Permission[]{permission});
-            }
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     private void requestSpecialPermission(SpecialPermission special, int requestCode) {
         switch (special){
             case INSTALL_UNKNOWN_APP:
@@ -128,7 +114,6 @@ public class PermissionFragment extends Fragment {
             default:
                 break;
         }
-
     }
 
     private int makeRequestCode(){
