@@ -6,6 +6,11 @@ package com.example.permission.bean;
  */
 public enum SpecialPermission {
 
-    INSTALL_UNKNOWN_APP//安装未知来源应用
+
+    INSTALL_UNKNOWN_APP,//安装未知来源应用
+
+    SYSTEM_ALERT_WINDOW,//设置悬浮窗
+
+    WRITE_SYSTEM_SETTINGS;//修改系统设置
 
 }

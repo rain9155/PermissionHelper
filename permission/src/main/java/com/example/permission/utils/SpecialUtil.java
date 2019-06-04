@@ -1,20 +1,10 @@
 package com.example.permission.utils;
 
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Build;
-import android.text.TextUtils;
+import android.provider.Settings;
 
-import androidx.annotation.RequiresApi;
-
-import com.example.permission.BuildConfig;
-import com.example.permission.bean.Permission;
 import com.example.permission.bean.SpecialPermission;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * 检查各种特殊权限或创建各种特殊Intent的工具类
@@ -32,6 +22,24 @@ public class SpecialUtil {
     }
 
     /**
+     * 检查特殊权限 - 修改系统设置
+     * @return true表示用户同意授权，false表示用户拒绝授权
+     */
+    public static boolean checkSpecialWriteSystemSettings(Context context){
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true;
+        return Settings.System.canWrite(context);
+    }
+
+    /**
+     * 检查特殊权限 - 悬浮窗权限
+     * @return true表示用户同意授权，false表示用户拒绝授权
+     */
+    public static boolean checkSpecialSystemAlertWindow(Context context){
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true;
+        return Settings.canDrawOverlays(context);
+    }
+
+    /**
      * 检查特殊权限，返回对应的权限授权值
      * @param special 特殊权限
      * @param context 上下文
@@ -42,6 +50,12 @@ public class SpecialUtil {
         switch (special){
             case INSTALL_UNKNOWN_APP:
                 isGranted = checkSpecialInstallUnkownApp(context);
+                break;
+            case WRITE_SYSTEM_SETTINGS:
+                isGranted = checkSpecialWriteSystemSettings(context);
+                break;
+            case SYSTEM_ALERT_WINDOW:
+                isGranted = checkSpecialSystemAlertWindow(context);
                 break;
             default:
                 break;

@@ -1,11 +1,8 @@
 package com.example.permission.utils;
 
 import android.os.Build;
-
-import androidx.annotation.RequiresApi;
-
+import android.support.annotation.RequiresApi;
 import com.example.permission.bean.Permission;
-
 import java.util.ArrayList;
 import java.util.List;
 

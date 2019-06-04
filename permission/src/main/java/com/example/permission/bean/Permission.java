@@ -1,7 +1,8 @@
 package com.example.permission.bean;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+
 
 /**
  * 权限实体类

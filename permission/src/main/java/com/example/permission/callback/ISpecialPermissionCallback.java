@@ -11,7 +11,15 @@ import java.security.SecurityPermission;
  */
 public interface ISpecialPermissionCallback {
 
-    void onAccepted(SpecialPermission permission);//setResult(OK)
+    /**
+     * 用户同意该特殊权限
+     * @param permission 特殊权限
+     */
+    void onAccepted(SpecialPermission permission);
 
-    void onDenied(SpecialPermission permission);//setResult(CANCEL)
+    /**
+     * 用户拒绝该特殊权限
+     * @param permission 特殊权限
+     */
+    void onDenied(SpecialPermission permission);
 }

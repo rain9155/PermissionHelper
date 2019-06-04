@@ -5,13 +5,13 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.support.annotation.NonNull;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 
-import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
-import androidx.fragment.app.FragmentActivity;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 
 import com.example.permission.bean.Permission;
 import com.example.permission.bean.SpecialPermission;
@@ -20,6 +20,7 @@ import com.example.permission.callback.IPermissionsCallback;
 import com.example.permission.callback.ISpecialPermissionCallback;
 import com.example.permission.proxy.PermissionFragment;
 import com.example.permission.utils.CommonUtil;
+import com.example.permission.utils.GotoUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,9 +54,19 @@ public class PermissionHelper {
         return sinstance;
     }
 
+    /**
+     * 必须传入的Activity
+     */
     public PermissionHelper with(Activity activity){
         this.mActivity = activity;
         return this;
+    }
+
+    /**
+     * 可以再基类中统一传入Activity，就无需每次调用with方法
+     */
+    public void init(Activity activity){
+        this.mActivity = activity;
     }
 
     /**
@@ -113,6 +124,7 @@ public class PermissionHelper {
      * @return true表示申请过，false反之
      */
     public boolean checkPermission(String name){
+        verfiy();
         return checkPermissions(new String[]{name}).length == 0;
     }
 
@@ -122,6 +134,7 @@ public class PermissionHelper {
      * @return 返回还没有被授权同意的权限数组，如果数组.length==0, 说明permissions都被授权同意了
      */
     public String[] checkPermissions(@NonNull String[] permissions){
+        verfiy();
         if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return new String[]{};
         List<Permission> rejectedPermissions = new ArrayList<>();
         for(String permission : permissions){
@@ -138,6 +151,7 @@ public class PermissionHelper {
      * @return true表示申请过，false反之
      */
     public boolean checkSpecialPermission(SpecialPermission special){
+        verfiy();
         return checkSpecialPermissions(special, mActivity);
     }
 
@@ -145,6 +159,7 @@ public class PermissionHelper {
      * 跳转到不同厂商的Permission设置界面，不满足条件，默认跳到应用详情界面
      */
     public void gotoPermissionDetail(){
+        verfiy();
         gotoPermissionDetail(0x9155);
     }
 
@@ -155,6 +170,7 @@ public class PermissionHelper {
      * @param requestCode 请求码
      */
     public void gotoPermissionDetail(int requestCode){
+        verfiy();
         String brand = Build.BRAND;
         if (TextUtils.equals(brand.toLowerCase(), "redmi") || TextUtils.equals(brand.toLowerCase(), "xiaomi")) {
             gotoMiuiPermission(mActivity, requestCode);
@@ -163,8 +179,25 @@ public class PermissionHelper {
         } else if (TextUtils.equals(brand.toLowerCase(), "huawei") || TextUtils.equals(brand.toLowerCase(), "honor")) {
             gotoHuaweiPermission(mActivity, requestCode);
         } else {
-            gotoAppDetail(mActivity, requestCode);
+            GotoUtil.gotoAppDetail(mActivity, requestCode);
         }
+    }
+
+    /**
+     * 跳转到应用详情页
+     */
+    public void gotoAppDetail(){
+        verfiy();
+        gotoAppDetail(0x9156);
+    }
+
+    /**
+     * 跳转到应用详情页，带请求码
+     * @param requestCode 请求码
+     */
+    public void gotoAppDetail(int requestCode){
+        verfiy();
+        GotoUtil.gotoAppDetail(mActivity, requestCode);
     }
 
     private void handlePermissionResult(IPermissionCallback callback, Permission permission) {
@@ -194,9 +227,9 @@ public class PermissionHelper {
                 }
             }
         }
-        callback.onAccepted(grantedPermissions);
-        callback.onDenied(deniedPermissions);
-        callback.onDeniedAndReject(deniedPermissions, deniedAndRejectedAndPermissions);
+        if(!grantedPermissions.isEmpty()) callback.onAccepted(grantedPermissions);
+        if(!deniedPermissions.isEmpty()) callback.onDenied(deniedPermissions);
+        if(!deniedAndRejectedAndPermissions.isEmpty()) callback.onDeniedAndReject(deniedPermissions, deniedAndRejectedAndPermissions);
     }
 
     private void handleSpecialPermissionResult(Permission permission, ISpecialPermissionCallback callback) {
@@ -208,7 +241,7 @@ public class PermissionHelper {
     }
 
     private PermissionFragment getPermissionFragment(Activity activity){
-        if(mActivity == null) throw new NullPointerException("The Activity is null, must call with(Activity acitity) after getInstance()!");
+        verfiy();
         if(!(activity instanceof FragmentActivity)) throw new IllegalArgumentException("The argument passed must be FragmentActivity or it's sub class");
         FragmentManager manager = ((FragmentActivity)activity).getSupportFragmentManager();
         PermissionFragment fragment = (PermissionFragment) manager.findFragmentByTag(TAG_PERMISSION_FRAGMENT);
@@ -224,5 +257,9 @@ public class PermissionHelper {
             }
         }
         return fragment;
+    }
+
+    private void verfiy() {
+        if(mActivity == null) throw new NullPointerException("The Activity is null, must call with(Activity acitity) after getInstance()!");
     }
 }

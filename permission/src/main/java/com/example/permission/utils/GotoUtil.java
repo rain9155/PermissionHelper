@@ -21,7 +21,6 @@ public class GotoUtil {
     public static void gotoAppDetail(Activity context, int requestCode) {
         Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
         intent.setData(Uri.parse("package:" + context.getPackageName()));
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivityForResult(intent, requestCode);
     }
 
@@ -32,7 +31,6 @@ public class GotoUtil {
     public static void gotoHuaweiPermission(Activity context, int requestCode) {
         try {
             Intent intent = new Intent();
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             ComponentName comp = new ComponentName("com.huawei.systemmanager", "com.huawei.permissionmanager.ui.MainActivity");//华为权限管理
             intent.setComponent(comp);
             context.startActivityForResult(intent, requestCode);
@@ -52,7 +50,6 @@ public class GotoUtil {
             Intent intent = new Intent("miui.intent.action.APP_PERM_EDITOR");
             intent.setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.PermissionsEditorActivity");
             intent.putExtra("extra_pkgname", context.getPackageName());
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivityForResult(intent, requestCode);
         } catch (Exception e) {
             e.printStackTrace();
@@ -61,7 +58,6 @@ public class GotoUtil {
                 Intent intent = new Intent("miui.intent.action.APP_PERM_EDITOR");
                 intent.setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.AppPermissionsEditorActivity");
                 intent.putExtra("extra_pkgname", context.getPackageName());
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 context.startActivityForResult(intent, requestCode);
             } catch (Exception e1) {
                 e1.printStackTrace();
@@ -77,7 +73,6 @@ public class GotoUtil {
         try {
             Intent intent = new Intent("com.meizu.safe.security.SHOW_APPSEC");
             intent.addCategory(Intent.CATEGORY_DEFAULT);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             intent.putExtra("packageName", BuildConfig.APPLICATION_ID);
             context.startActivityForResult(intent, requestCode);
         } catch (Exception e) {

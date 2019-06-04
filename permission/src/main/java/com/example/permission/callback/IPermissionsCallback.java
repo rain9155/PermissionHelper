@@ -20,7 +20,7 @@ public interface IPermissionsCallback {
     void onAccepted(List<Permission> permissions);
 
     /**
-     * 权限拒绝的回调，只有一种情况：
+     * 权限拒绝的回调，可以引导用户到权限申请页同意一个或多个权限，只有一种情况：
      * （1）用户点击拒绝授权一个或多个权限
      * @param permissions 用户拒绝授权的权限列表
      */

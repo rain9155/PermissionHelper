@@ -2,6 +2,4 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.permission">
 
-    <application />
-
 </manifest>

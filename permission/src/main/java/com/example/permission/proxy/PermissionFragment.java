@@ -9,22 +9,17 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.annotation.RequiresApi;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
 import android.util.SparseArray;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
-import androidx.core.app.ActivityCompat;
-import androidx.fragment.app.Fragment;
-
 import com.example.permission.bean.Permission;
 import com.example.permission.bean.SpecialPermission;
 import com.example.permission.callback.IPermissionsResultCallback;
 import com.example.permission.utils.SpecialUtil;
-
 import java.util.Random;
-
-import static android.app.Activity.RESULT_OK;
 
 /**
  * 申请权限的代理Fragment
@@ -105,15 +100,25 @@ public class PermissionFragment extends Fragment {
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     private void requestSpecialPermission(SpecialPermission special, int requestCode) {
+        Intent intent = null;
         switch (special){
             case INSTALL_UNKNOWN_APP:
                 Uri selfPackageUri = Uri.parse("package:" + mActivity.getPackageName());
-                Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, selfPackageUri);
-                startActivityForResult(intent, requestCode);
+                intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, selfPackageUri);
+                break;
+            case WRITE_SYSTEM_SETTINGS:
+                intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+                intent.setData(Uri.parse("package:" + mActivity.getPackageName()));
+                break;
+            case SYSTEM_ALERT_WINDOW:
+                intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+                intent.setData(Uri.parse("package:" + mActivity.getPackageName()));
                 break;
             default:
+                intent = new Intent();
                 break;
         }
+        startActivityForResult(intent, requestCode);
     }
 
     private int makeRequestCode(){
