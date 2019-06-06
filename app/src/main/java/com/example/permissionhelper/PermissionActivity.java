@@ -128,6 +128,7 @@ public class PermissionActivity extends AppCompatActivity {
         findViewById(R.id.btn_goto_permission).setOnClickListener(v -> {
             PermissionHelper.getInstance().with(this).gotoPermissionDetail();
         });
+
     }
 
     @Override
