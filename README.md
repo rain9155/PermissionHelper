@@ -1,5 +1,5 @@
 # PermissionHelper
-简化android6.0动态权限申请过程，一行代码搞定权限申请，可以一次申请单个或多个权限，支持特殊权限的申请，欢迎大家star、fork，如有问题请[issue](https://github.com/rain9155/PermissionHelper/issues)。
+## 简化android6.0动态权限申请过程，一行代码搞定权限申请，可以一次申请单个或多个权限，支持特殊权限的申请，欢迎大家star、fork，如有问题请[issue](https://github.com/rain9155/PermissionHelper/issues)。
 
 ## Pre
 
@@ -12,11 +12,11 @@
 原理是什么呢？就是通过一个没有界面的Fragment代理权限申请的过程，然后把权限结果回调给我们。就是这样简单的一句话，更多细节查看[PermissionFragment](https://github.com/rain9155/PermissionHelper/tree/master/permission/src/main/java/com/example/permission/proxy)。
 
 ## Screenshots
-
+![s1](/screenshots/s1.png)
+![s](/screenshots/s.png)
 ## Download
-
-下载查看示例
-
+下载查看示例。<br>
+![qr](/screenshots/qr.png)
 ## How to install?
 
 在项目的app目录下的build.gradle中引入，如下：
