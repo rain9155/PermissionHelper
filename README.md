@@ -12,8 +12,8 @@
 原理是什么呢？就是通过一个没有界面的Fragment代理权限申请的过程，然后把权限结果回调给我们。就是这样简单的一句话，更多细节查看[PermissionFragment](https://github.com/rain9155/PermissionHelper/tree/master/permission/src/main/java/com/example/permission/proxy)。
 
 ## Screenshots
-![s1](/screenshots/s1.png)
-![s](/screenshots/s.png)
+![s1](/screenshots/s1.jpg)
+![s](/screenshots/s.jpg)
 ## Download
 下载查看示例。<br>
 ![qr](/screenshots/qr.png)
