@@ -23,7 +23,7 @@
 
 ```java
 dependencies {
-    implementation 'com.jianyu:permissionhelper:v1.0'
+    implementation 'com.jianyu:permissionhelper:1.0.1'
 }
 ```
 
