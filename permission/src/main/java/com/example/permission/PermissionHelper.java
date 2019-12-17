@@ -2,8 +2,10 @@ package com.example.permission;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentActivity;
@@ -22,6 +24,7 @@ import com.example.permission.proxy.PermissionFragment;
 import com.example.permission.utils.CommonUtil;
 import com.example.permission.utils.GotoUtil;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -261,5 +264,19 @@ public class PermissionHelper {
 
     private void verfiy() {
         if(mActivity == null) throw new NullPointerException("The Activity is null, must call with(Activity acitity) after getInstance()!");
+    }
+
+    @Deprecated
+    public static boolean isUriRequiresPermissions(@NonNull Context context, @NonNull Uri uri) {
+        try {
+            ContentResolver resolver = context.getContentResolver();
+            InputStream stream = resolver.openInputStream(uri);
+            if (stream != null) {
+                stream.close();
+            }
+            return false;
+        } catch (Exception e) {
+            return true;
+        }
     }
 }
