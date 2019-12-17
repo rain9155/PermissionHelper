@@ -10,14 +10,16 @@
 
 ## How to dow?
 
-原理是什么呢？就是通过一个没有界面的Fragment代理权限申请的过程，然后把权限结果回调给我们。就是这样简单的一句话，更多细节查看[PermissionFragment](https://github.com/rain9155/PermissionHelper/tree/master/permission/src/main/java/com/example/permission/proxy)。
+原理是什么呢？就是通过一个没有界面的Fragment代理权限申请的过程，然后把权限结果回调给我们。就是这样简单的一句话，更多细节查看[PermissionFragment](https://github.com/rain9155/PermissionHelper/tree/master/permission/src/main/java/com/example/permission/proxy)，如果对权限申请流程不了解可以查看[android6.0动态权限申请的正确流程](https://juejin.im/post/5d2aad8cf265da1b8a4f4cc5)这篇文章。
 
 ## Preview
 ![s1](/screenshots/s1.gif)
 ![s2](/screenshots/s.gif)
+
 ## Download
 下载查看示例。<br>
 ![qr](/screenshots/qr.png)
+
 ## How to install?
 
 在项目的app目录下的build.gradle中引入，如下：
