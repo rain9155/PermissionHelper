@@ -12,9 +12,9 @@
 
 原理是什么呢？就是通过一个没有界面的Fragment代理权限申请的过程，然后把权限结果回调给我们。就是这样简单的一句话，更多细节查看[PermissionFragment](https://github.com/rain9155/PermissionHelper/tree/master/permission/src/main/java/com/example/permission/proxy)。
 
-## Screenshots
-![s1](/screenshots/s1.jpg)
-![s](/screenshots/s.jpg)
+## Preview
+![s1](/screenshots/s1.gif)
+![s2](/screenshots/s.gif)
 ## Download
 下载查看示例。<br>
 ![qr](/screenshots/qr.png)
@@ -42,6 +42,7 @@ PermissionHelper.getInstance().with(this).checkPermission(Manifest.permission.CA
 
 ```java
 mPermissions = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.WRITE_CONTACTS, Manifest.permission.CAMERA};
+
 PermissionHelper.getInstance().with(this).checkPermissions(mPermissions);
 ```
 
@@ -58,26 +59,54 @@ PermissionHelper.getInstance().with(this).checkSpecialPermission(SpecialPermissi
 对应[IPermissionCallback](https://github.com/rain9155/PermissionHelper/blob/master/permission/src/main/java/com/example/permission/callback/IPermissionCallback.java)接口。
 
 ```java
- PermissionHelper.getInstance().with(this).requestPermission(
-                    Manifest.permission.CALL_PHONE,
-                    new IPermissionCallback() {
-                        @Override
-                        public void onAccepted(Permission permission) {
-                            //...
-                        }
+PermissionHelper.getInstance().with(this).requestPermission(
+    Manifest.permission.CALL_PHONE,
+    new IPermissionCallback() {
+	@Override
+	public void onAccepted(Permission permission) {
+	    //...
+	}
 
-                        @Override
-                        public void onDenied(Permission permission) {
-                            //...
-                        }
-						
-                        //这里可以根据业务逻辑选择重写onDeniedAndReject（）,这里我重写了
-                        @Override
-                        public void onDeniedAndReject(Permission permission) {
-                          //...
-                        }
-                    }
-            );
+	@Override
+	public void onDenied(Permission permission) {
+	    //...
+	}
+
+	//这里可以根据业务逻辑选择重写onDeniedAndReject（）,这里我重写了
+	@Override
+	public void onDeniedAndReject(Permission permission) {
+	  //...
+	}
+    }
+);
+```
+
+回调方法解释：
+
+```java
+/**
+* 权限同意后回调，有三种情况：
+* （1）用户点击授权了这个权限
+* （2）之前已经同意了无需再授权此权限
+* （3）系统版本小于M
+* @param permission 封装了信息的权限
+*/
+void onAccepted(Permission permission);
+
+/**
+* 权限拒绝后回调，只有一种情况：
+* （1）用户点击拒绝授权了这个权限
+* @param permission 封装了信息的权限
+*/
+void onDenied(Permission permission);
+
+/**
+* 权限拒绝后回调，你可以选择重写它并在里面处理逻辑，如引导用户到权限申请页同意这个权限
+* 只有一种情况：
+* （1）没用户点击拒绝授权了这个权限，并勾选了don’t ask again
+* @param permission 封装了信息的权限
+*/
+default void onDeniedAndReject(Permission permission){}
 ```
 
 ### 5、申请多个普通权限
@@ -85,21 +114,50 @@ PermissionHelper.getInstance().with(this).checkSpecialPermission(SpecialPermissi
 对应[IPermissionsCallback](https://github.com/rain9155/PermissionHelper/blob/master/permission/src/main/java/com/example/permission/callback/IPermissionsCallback.java)接口。
 
 ```java
-  PermissionHelper.getInstance().with(this).requestPermissions(
-                    mPermissions,
-                    new IPermissionsCallback() {
-                        @Override
-                        public void onAccepted(List<Permission> permissions) {
-                          //...
-                        }
+PermissionHelper.getInstance().with(this).requestPermissions(
+    mPermissions,
+    new IPermissionsCallback() {
+	@Override
+	public void onAccepted(List<Permission> permissions) {
+	  //...
+	}
 
-                        @Override
-                        public void onDenied(List<Permission> permissions) {
-                          //...
-                        }
+	@Override
+	public void onDenied(List<Permission> permissions) {
+	  //...
+	}
 
-                        //这里可以根据业务逻辑选择重写onDeniedAndReject（），这里我没有重写
-                    }
+	//这里可以根据业务逻辑选择重写onDeniedAndReject（），这里我没有重写
+    }
+```
+回调方法解释：
+
+```java
+/**
+* 权限同意的回调，有三种情况：
+*（1）用户点击授权了一个或多个权限
+*（2）之前已经同意了无需再授权此权限
+*（3）系统版本小于M
+* @param permissions 用户同意授权的权限列表
+*/
+void onAccepted(List<Permission> permissions);
+
+/**
+* 权限拒绝的回调，可以引导用户到权限申请页同意一个或多个权限，只有一种情况：
+* （1）用户点击拒绝授权一个或多个权限
+* @param permissions 用户拒绝授权的权限列表
+*/
+void onDenied(List<Permission> permissions);
+
+/**
+* 权限拒绝的回调，你可以选择重写它并在里面处理逻辑，如引导用户到权限申请页同意一个或多个权限
+* 只有一种情况：
+* （1）没用户点击拒绝授权一个或多个权限，并勾选了don’t ask again
+* @param permissionsDenied 用户拒绝授权的权限列表
+* @param permissionsReject 用户拒绝授权并勾选了don’t ask again的权限列表
+*/
+default void onDeniedAndReject(List<Permission> permissionsDenied, List<Permission> permissionsReject){}
+
 ```
 
 ### 6、申请特殊普通权限
@@ -107,20 +165,36 @@ PermissionHelper.getInstance().with(this).checkSpecialPermission(SpecialPermissi
 对应[ISpecialPermissionCallback](https://github.com/rain9155/PermissionHelper/blob/master/permission/src/main/java/com/example/permission/callback/ISpecialPermissionCallback.java)接口。
 
 ```java
- PermissionHelper.getInstance().with(this).requestSpecialPermission(
-                    SpecialPermission.WRITE_SYSTEM_SETTINGS,
-                    new ISpecialPermissionCallback() {
-                        @Override
-                        public void onAccepted(SpecialPermission permission) {
-                           //...
-                        }
+PermissionHelper.getInstance().with(this).requestSpecialPermission(
+    SpecialPermission.WRITE_SYSTEM_SETTINGS,
+    new ISpecialPermissionCallback() {
+	@Override
+	public void onAccepted(SpecialPermission permission) {
+	   //...
+	}
 
-                        @Override
-                        public void onDenied(SpecialPermission permission) {
-                           //...
-                        }
-                    }
-            );
+	@Override
+	public void onDenied(SpecialPermission permission) {
+	   //...
+	}
+    }
+);
+```
+
+回调方法解释：
+
+```java
+/**
+* 用户同意该特殊权限
+* @param permission 特殊权限
+*/
+void onAccepted(SpecialPermission permission);
+
+/**
+* 用户拒绝该特殊权限
+* @param permission 特殊权限
+*/
+void onDenied(SpecialPermission permission);
 ```
 
 ### 其他操作
@@ -149,7 +223,7 @@ PermissionHelper.getInstance().with(this).gotoAppDetail();
 PermissionHelper.getInstance().with(this).gotoPermissionDetail();
 ```
 
-更多细节查看[Demo](https://github.com/rain9155/PermissionHelper/tree/master/app/src/main/java/com/example/permissionhelper)，代码是最好的老师，如果对哪个回调方法不知道什么意思，可以查看该方法的注释。
+更多细节查看[Demo](https://github.com/rain9155/PermissionHelper/tree/master/app/src/main/java/com/example/permissionhelper)，代码是最好的老师，如果对哪个回调方法不知道什么意思，可以查看该方法的注释,每个方法都有详细的注释。
 
 ## License
 
