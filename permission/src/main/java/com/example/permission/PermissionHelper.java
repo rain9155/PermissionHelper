@@ -25,6 +25,8 @@ import com.example.permission.utils.CommonUtil;
 import com.example.permission.utils.GotoUtil;
 
 import java.io.InputStream;
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,7 +40,7 @@ import static com.example.permission.utils.GotoUtil.*;
 public class PermissionHelper {
 
     private static final String TAG_PERMISSION_FRAGMENT = PermissionFragment.class.getName();
-    private Activity mActivity;
+    private Reference<Activity> mActivity;
     private static PermissionHelper sinstance = null;
 
     private PermissionHelper(){}
@@ -61,7 +63,7 @@ public class PermissionHelper {
      * 必须传入的Activity
      */
     public PermissionHelper with(Activity activity){
-        this.mActivity = activity;
+        this.mActivity = new WeakReference<>(activity);
         return this;
     }
 
@@ -69,7 +71,7 @@ public class PermissionHelper {
      * 可以再基类中统一传入Activity，就无需每次调用with方法
      */
     public void init(Activity activity){
-        this.mActivity = activity;
+        this.mActivity = new WeakReference<>(activity);
     }
 
     /**
@@ -84,7 +86,7 @@ public class PermissionHelper {
             callback.onAccepted(new Permission(name));
             return;
         }
-        getPermissionFragment(mActivity).requestPermissions(
+        getPermissionFragment().requestPermissions(
                 requestPermissions,
                 (permissionsResult) -> handlePermissionResult(callback, permissionsResult[0])
         );
@@ -102,7 +104,7 @@ public class PermissionHelper {
             callback.onAccepted(CommonUtil.toList(permissions));
             return;
         }
-        getPermissionFragment(mActivity).requestPermissions(
+        getPermissionFragment().requestPermissions(
                 requestPermissions,
                 (permissionsResult) -> handlePermissionsResult(callback, permissionsResult)
         );
@@ -114,7 +116,7 @@ public class PermissionHelper {
             callback.onAccepted(specialPermission);
             return;
         }
-        getPermissionFragment(mActivity).requestSpecialPermission(
+        getPermissionFragment().requestSpecialPermission(
                 specialPermission,
                 (permissionsResult) -> handleSpecialPermissionResult(permissionsResult[0], callback)
         );
@@ -127,7 +129,6 @@ public class PermissionHelper {
      * @return true表示申请过，false反之
      */
     public boolean checkPermission(String name){
-        verfiy();
         return checkPermissions(new String[]{name}).length == 0;
     }
 
@@ -141,12 +142,13 @@ public class PermissionHelper {
         if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return new String[]{};
         List<Permission> rejectedPermissions = new ArrayList<>();
         for(String permission : permissions){
-            if(ContextCompat.checkSelfPermission(mActivity, permission) != PackageManager.PERMISSION_GRANTED){
+            if(ContextCompat.checkSelfPermission(mActivity.get(), permission) != PackageManager.PERMISSION_GRANTED){
                 rejectedPermissions.add(new Permission(permission));
             }
         }
         return CommonUtil.toArray(rejectedPermissions);
     }
+
 
     /**
      * 检查特殊权限是否申请过
@@ -155,14 +157,27 @@ public class PermissionHelper {
      */
     public boolean checkSpecialPermission(SpecialPermission special){
         verfiy();
-        return checkSpecialPermissions(special, mActivity);
+        boolean isGranted = false;
+        switch (special){
+            case INSTALL_UNKNOWN_APP:
+                isGranted = checkSpecialInstallUnkownApp(mActivity.get());
+                break;
+            case WRITE_SYSTEM_SETTINGS:
+                isGranted = checkSpecialWriteSystemSettings(mActivity.get());
+                break;
+            case SYSTEM_ALERT_WINDOW:
+                isGranted = checkSpecialSystemAlertWindow(mActivity.get());
+                break;
+            default:
+                break;
+        }
+        return isGranted;
     }
 
     /**
      * 跳转到不同厂商的Permission设置界面，不满足条件，默认跳到应用详情界面
      */
     public void gotoPermissionDetail(){
-        verfiy();
         gotoPermissionDetail(0x9155);
     }
 
@@ -176,13 +191,13 @@ public class PermissionHelper {
         verfiy();
         String brand = Build.BRAND;
         if (TextUtils.equals(brand.toLowerCase(), "redmi") || TextUtils.equals(brand.toLowerCase(), "xiaomi")) {
-            gotoMiuiPermission(mActivity, requestCode);
+            gotoMiuiPermission(mActivity.get(), requestCode);
         } else if (TextUtils.equals(brand.toLowerCase(), "meizu")) {
-            gotoMeizuPermission(mActivity, requestCode);
+            gotoMeizuPermission(mActivity.get(), requestCode);
         } else if (TextUtils.equals(brand.toLowerCase(), "huawei") || TextUtils.equals(brand.toLowerCase(), "honor")) {
-            gotoHuaweiPermission(mActivity, requestCode);
+            gotoHuaweiPermission(mActivity.get(), requestCode);
         } else {
-            GotoUtil.gotoAppDetail(mActivity, requestCode);
+            GotoUtil.gotoAppDetail(mActivity.get(), requestCode);
         }
     }
 
@@ -190,7 +205,6 @@ public class PermissionHelper {
      * 跳转到应用详情页
      */
     public void gotoAppDetail(){
-        verfiy();
         gotoAppDetail(0x9156);
     }
 
@@ -200,7 +214,21 @@ public class PermissionHelper {
      */
     public void gotoAppDetail(int requestCode){
         verfiy();
-        GotoUtil.gotoAppDetail(mActivity, requestCode);
+        GotoUtil.gotoAppDetail(mActivity.get(), requestCode);
+    }
+
+    @Deprecated
+    public boolean isUriRequiresPermissions(@NonNull Context context, @NonNull Uri uri) {
+        try {
+            ContentResolver resolver = context.getContentResolver();
+            InputStream stream = resolver.openInputStream(uri);
+            if (stream != null) {
+                stream.close();
+            }
+            return false;
+        } catch (Exception e) {
+            return true;
+        }
     }
 
     private void handlePermissionResult(IPermissionCallback callback, Permission permission) {
@@ -243,7 +271,8 @@ public class PermissionHelper {
         }
     }
 
-    private PermissionFragment getPermissionFragment(Activity activity){
+    private PermissionFragment getPermissionFragment(){
+        Activity activity = mActivity.get();
         verfiy();
         if(!(activity instanceof FragmentActivity)) throw new IllegalArgumentException("The argument passed must be FragmentActivity or it's sub class");
         FragmentManager manager = ((FragmentActivity)activity).getSupportFragmentManager();
@@ -263,20 +292,7 @@ public class PermissionHelper {
     }
 
     private void verfiy() {
-        if(mActivity == null) throw new NullPointerException("The Activity is null, must call with(Activity acitity) after getInstance()!");
-    }
-
-    @Deprecated
-    public static boolean isUriRequiresPermissions(@NonNull Context context, @NonNull Uri uri) {
-        try {
-            ContentResolver resolver = context.getContentResolver();
-            InputStream stream = resolver.openInputStream(uri);
-            if (stream != null) {
-                stream.close();
-            }
-            return false;
-        } catch (Exception e) {
-            return true;
-        }
+        if(mActivity.get() == null)
+            throw new NullPointerException("The Activity is null, must call with(Activity acitity) after getInstance()!");
     }
 }

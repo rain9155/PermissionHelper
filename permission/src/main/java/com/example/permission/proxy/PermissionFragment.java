@@ -15,6 +15,8 @@ import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.util.SparseArray;
+
+import com.example.permission.PermissionHelper;
 import com.example.permission.bean.Permission;
 import com.example.permission.bean.SpecialPermission;
 import com.example.permission.callback.IPermissionsResultCallback;
@@ -93,7 +95,11 @@ public class PermissionFragment extends Fragment {
             mPermissionsResult.remove(requestCode);
                 SpecialPermission special = mSpecialPermissions.get(requestCode);
                 mSpecialPermissions.remove(requestCode);
-                Permission permission = new Permission(SpecialUtil.checkSpecialPermissions(special, mActivity), special);
+                Permission permission = new Permission(
+                        PermissionHelper.getInstance()
+                        .with(mActivity)
+                        .checkSpecialPermission(special),
+                        special);
                 callback.OnPermissionsResult(new Permission[]{permission});
         }
     }

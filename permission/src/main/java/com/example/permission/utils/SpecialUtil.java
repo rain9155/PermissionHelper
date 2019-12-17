@@ -39,28 +39,4 @@ public class SpecialUtil {
         return Settings.canDrawOverlays(context);
     }
 
-    /**
-     * 检查特殊权限，返回对应的权限授权值
-     * @param special 特殊权限
-     * @param context 上下文
-     * @return true表示用户同意授权，false表示用户拒绝授权
-     */
-    public static boolean checkSpecialPermissions(SpecialPermission special, Context context) {
-        boolean isGranted = false;
-        switch (special){
-            case INSTALL_UNKNOWN_APP:
-                isGranted = checkSpecialInstallUnkownApp(context);
-                break;
-            case WRITE_SYSTEM_SETTINGS:
-                isGranted = checkSpecialWriteSystemSettings(context);
-                break;
-            case SYSTEM_ALERT_WINDOW:
-                isGranted = checkSpecialSystemAlertWindow(context);
-                break;
-            default:
-                break;
-        }
-        return isGranted;
-    }
-
 }
