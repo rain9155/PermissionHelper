@@ -14,7 +14,7 @@
 
 ## Preview
 ![s1](/screenshots/s1.gif)
-![s2](/screenshots/s.gif)
+![s2](/screenshots/s2.gif)
 
 ## Download
 下载查看示例。<br>
