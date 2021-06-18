@@ -1,6 +1,6 @@
 # PermissionHelper
-[ ![Download](https://api.bintray.com/packages/rain9155/jianyu/permissionhelper/images/download.svg) ](https://bintray.com/rain9155/jianyu/permissionhelper/_latestVersion)
-### 简化android6.0动态权限申请过程，一行代码搞定权限申请，可以一次申请单个或多个权限，支持特殊权限的申请，欢迎大家star、fork，如有问题请[issue](https://github.com/rain9155/PermissionHelper/issues)。
+
+## 简化android6.0动态权限申请过程，一行代码搞定权限申请，可以一次申请单个或多个权限，支持特殊权限的申请，欢迎大家star、fork，如有问题请[issue](https://github.com/rain9155/PermissionHelper/issues)。
 
 ## Pre
 
@@ -17,16 +17,24 @@
 ![s2](/screenshots/s2.gif)
 
 ## Download
-下载查看示例。<br>
-![qr](/screenshots/qr.png)
+[点击下载查看示例](https://github.com/rain9155/PermissionHelper/releases/download/1.0.2/app-debug.apk)
 
 ## How to install?
 
-在项目的app目录下的build.gradle中引入，如下：
+在项目的根目录的build.gradle中引入仓库：
+```groovy
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+}
+```
 
-```java
+然后在app目录下的build.gradle中引入依赖：
+
+```groovy
 dependencies {
-    implementation 'com.jianyu:permissionhelper:1.0.1'
+    implementation 'io.github.rain9155:permissionhelper:1.0.2'
 }
 ```
 
