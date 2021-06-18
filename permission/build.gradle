@@ -3,13 +3,11 @@ apply plugin: 'com.android.library'
 android {
     compileSdkVersion 28
 
-
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 28
         versionCode 2
         versionName "2.0"
-
     }
 
     buildTypes {
@@ -29,14 +27,4 @@ dependencies {
     compileOnly 'com.android.support:support-fragment:28.0.0'
 }
 
-apply plugin: 'com.novoda.bintray-release'
-
-publish {
-    userOrg = 'rain9155'
-    repoName = 'jianyu'
-    groupId = 'com.jianyu'
-    artifactId = 'permissionhelper'
-    publishVersion = '1.0.1'
-    desc = 'a permission request tool dynamically for android'
-    website = 'https://github.com/rain9155/PermissionHelper'
-}
+apply from: 'https://raw.githubusercontent.com/rain9155/MavenPublishScript/main/publication.gradle'

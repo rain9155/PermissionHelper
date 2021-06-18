@@ -8,8 +8,6 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.4.0'
-        classpath 'com.novoda:bintray-release:0.9.1'
-
     }
 }
 
@@ -17,7 +15,10 @@ allprojects {
     repositories {
         google()
         jcenter()
-        
+        mavenCentral()
+        maven{
+            url = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+        }
     }
 }
 
