@@ -25,10 +25,10 @@ android {
 }
 
 dependencies {
-    compileOnly 'androidx.appcompat:appcompat:$appcompat_version'
+    compileOnly "androidx.appcompat:appcompat:$appcompat_version"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }
 
-//apply from: 'https://raw.githubusercontent.com/rain9155/MavenPublishScript/main/script/publication.gradle'
+apply from: 'https://gitee.com/rain_9155/hosting/raw/master/MavenPublishScript/publication.gradle'
 
 
