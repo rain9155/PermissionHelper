@@ -15,7 +15,6 @@ import com.example.permission.utils.LogUtil
 import com.example.permission.utils.PermissionUtil
 import com.example.permission.utils.SettingsUtil
 import com.example.permission.utils.SpecialUtil
-import kotlin.random.Random
 
 /**
  * 申请权限的代理Fragment
@@ -36,7 +35,6 @@ internal class ProxyFragmentV1 : Fragment(), IProxyFragment {
     private val permissionResultCallbacks = SparseArray<IPermissionResultsCallback>()
     private val waitForCheckPermissions = SparseArray<Array<String>>()
     private val waitForCheckSpecialPermissions = SparseArray<SpecialArray>()
-    private val random = Random.Default
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -163,73 +161,12 @@ internal class ProxyFragmentV1 : Fragment(), IProxyFragment {
         startActivityForResult(SettingsUtil.getIntent(host), requestCode)
     }
 
-    /**
-     * 随机生成[[INITIAL_REQUEST_CODE], [Int.MAX_VALUE]]之间的数字
-     */
-    private fun generateRequestCode(): Int {
+    private fun generateRequestCode(): Int{
         var requestCode: Int
         do {
-            requestCode = random.nextInt(Int.MAX_VALUE - INITIAL_REQUEST_CODE + 1) + INITIAL_REQUEST_CODE
+            requestCode = PermissionUtil.generateRandomCode(initialCode = INITIAL_REQUEST_CODE)
         } while (permissionResultCallbacks.indexOfKey(requestCode) >= 0)
         return requestCode
-    }
-
-    /**
-     * 封装特殊权限集合操作
-     */
-    private class SpecialArray(private val permissions: Array<String>){
-
-        private var index = 0
-        private val grantResults = BooleanArray(permissions.size)
-
-        fun size(): Int{
-            return permissions.size
-        }
-
-        fun hasNext(): Boolean{
-            return index < permissions.size
-        }
-
-        fun nextPermission(): String{
-            if(!hasNext()){
-                return ""
-            }
-            return permissions[index++]
-        }
-
-        fun hasPrior(): Boolean{
-            return index > 0
-        }
-
-        fun priorPermission(): String{
-            if(!hasPrior()){
-                return ""
-            }
-            return permissions[index - 1]
-        }
-
-        fun get(index: Int): String{
-            if(index < 0 || index >= size()){
-                return ""
-            }
-            return permissions[index]
-        }
-
-        fun getPermissions(): Array<String>{
-            return permissions.clone()
-        }
-
-        fun getGrantResults(): BooleanArray{
-            return grantResults.clone()
-        }
-
-        fun setPriorGrantResult(granted: Boolean){
-            if(!hasPrior()){
-                return
-            }
-            grantResults[index - 1] = granted
-        }
-
     }
 
 }

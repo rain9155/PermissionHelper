@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import java.io.FileNotFoundException
 import java.io.InputStream
 import java.util.*
+import kotlin.random.Random
 
 /**
  * 权限检查等工具方法
@@ -81,6 +82,16 @@ internal object PermissionUtil {
      */
     fun checkShouldShowRationale(activity: Activity, permission: String): Boolean{
         return ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+    }
+
+    /**
+     * 随机生成[[initialCode], [maxCode]]之间的数字
+     */
+    fun generateRandomCode(initialCode: Int = Int.MIN_VALUE, maxCode: Int = Int.MAX_VALUE): Int {
+        if(maxCode < initialCode){
+            return Random.Default.nextInt()
+        }
+        return Random.Default.nextInt(maxCode - initialCode + 1) + initialCode
     }
 
 }
