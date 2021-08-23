@@ -23,8 +23,9 @@ internal data class Request(
     var rejectedCallback: IRejectedCallback?,
     var rejectedForeverCallback: IRejectedForeverCallback?,
     var resultCallback: IResultCallback?,
-    var grantedPermissions: MutableList<String> = ArrayList(),
-    var rejectedPermissions: MutableList<String> = ArrayList()
+    val grantedPermissions: MutableList<String> = ArrayList(),
+    val rejectedPermissions: MutableList<String> = ArrayList(),
+    val rejectedForeverPermissions: MutableList<String> = ArrayList()
 )
 
 

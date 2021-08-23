@@ -32,9 +32,12 @@ internal class RequestSpecialNode : INode {
         request.proxyFragment.requestSpecialPermissions(specialPermissions, object : IPermissionResultsCallback {
             override fun onPermissionResults(permissionResults: List<PermissionResult>) {
                 permissionResults.forEach {result ->
-                    if(result.granted && request.requestPermissions.remove(result.name)){
+                    if(result.granted){
                         request.grantedPermissions.add(result.name)
+                    }else{
+                        request.rejectedPermissions.add(result.name)
                     }
+                    request.requestPermissions.remove(result.name)
                 }
                 chain.process(request)
             }

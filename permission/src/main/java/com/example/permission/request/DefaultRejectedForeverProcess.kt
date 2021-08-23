@@ -19,11 +19,12 @@ internal class DefaultRejectedForeverProcess(private val chain: IChain) : IRejec
     override fun gotoSettings() {
         LogUtil.d(TAG, "gotoSettings")
         val request = chain.getRequest()
-        request.proxyFragment.gotoSettingsForCheckResults(request.requestPermissions, object : IPermissionResultsCallback{
+        request.proxyFragment.gotoSettingsForCheckResults(request.rejectedForeverPermissions, object : IPermissionResultsCallback{
             override fun onPermissionResults(permissionResults: List<PermissionResult>) {
                 permissionResults.forEach {result ->
-                    if(result.granted && request.requestPermissions.remove(result.name)){
+                    if(result.granted){
                         request.grantedPermissions.add(result.name)
+                        request.rejectedForeverPermissions.remove(result.name)
                     }
                 }
                 chain.process(request)
@@ -33,6 +34,6 @@ internal class DefaultRejectedForeverProcess(private val chain: IChain) : IRejec
 
     override fun requestTermination() {
         LogUtil.d(TAG, "requestTermination")
-        chain.process(chain.getRequest(), finish = true)
+        chain.process(chain.getRequest(), finish  = true)
     }
 }

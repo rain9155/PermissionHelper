@@ -40,7 +40,7 @@ internal object PermissionUtil {
      */
     fun checkPermissions(context: Context, permissions: List<String>): Pair<MutableList<String>, MutableList<String>>{
         val grantedPermissions = ArrayList<String>()
-        val requestPermissions = ArrayList<String>()
+        val rejectedPermissions = ArrayList<String>()
         for(permission in permissions){
             val isGranted = if(!isSpecialPermission(permission)){
                 checkNormalPermission(context, permission)
@@ -50,10 +50,10 @@ internal object PermissionUtil {
             if(isGranted){
                 grantedPermissions.add(permission)
             }else{
-                requestPermissions.add(permission)
+                rejectedPermissions.add(permission)
             }
         }
-        return Pair(requestPermissions, grantedPermissions)
+        return Pair(rejectedPermissions, grantedPermissions)
     }
 
     /**

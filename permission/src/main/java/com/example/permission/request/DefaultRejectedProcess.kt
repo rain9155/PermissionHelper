@@ -18,9 +18,10 @@ internal class DefaultRejectedProcess(private val chain: IChain) : IRejectedCall
     override fun requestAgain(permissions: List<String>) {
         LogUtil.d(TAG, "requestAgain: permissions = $permissions")
         val request = chain.getRequest()
-        request.requestPermissions.forEach {permission ->
-            if(!permissions.contains(permission)){
-                request.rejectedPermissions.add(permission)
+        val rejectedPermissions = request.rejectedPermissions
+        rejectedPermissions.forEach { permission ->
+            if(permissions.contains(permission)){
+                request.rejectedPermissions.remove(permission)
             }
         }
         request.requestPermissions = permissions.toMutableList()

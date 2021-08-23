@@ -19,12 +19,21 @@ internal class FinishRequestNode : INode {
 
         LogUtil.d(TAG, "pre handle: request = $request")
 
-        request.rejectedPermissions.addAll(request.requestPermissions)
+        if(request.requestPermissions.isNotEmpty()){
+            request.rejectedPermissions.addAll(request.requestPermissions)
+            request.requestPermissions.clear()
+        }
+
         if(request.resultCallback != null){
+            val grantedPermissions = request.grantedPermissions
+            val rejectedPermissions = ArrayList<String>(request.rejectedPermissions.size + request.rejectedForeverPermissions.size).apply {
+                addAll(request.rejectedPermissions)
+                addAll(request.rejectedForeverPermissions)
+            }
             request.resultCallback!!.onResult(
-                request.rejectedPermissions.isEmpty(),
-                request.grantedPermissions,
-                request.rejectedPermissions
+                rejectedPermissions.isEmpty(),
+                grantedPermissions,
+                rejectedPermissions
             )
             request.resultCallback = null
         }

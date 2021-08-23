@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.ArrayMap
-import android.util.SparseArray
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
@@ -17,7 +16,7 @@ import com.example.permission.utils.LogUtil
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- *
+ * 申请权限的代理Fragment, 使用新的Activity Result API实现：https://developer.android.com/training/basics/intents/result#separate
  * Created by 陈健宇 at 2021/8/18
  */
 internal class ProxyFragmentV2 : Fragment(), IProxyFragment{
