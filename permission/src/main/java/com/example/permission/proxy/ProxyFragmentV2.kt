@@ -2,55 +2,41 @@ package com.example.permission.proxy
 
 import android.app.Activity
 import android.content.Intent
-import android.os.Bundle
-import android.util.ArrayMap
+import android.util.SparseArray
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.fragment.app.Fragment
+import com.example.permission.base.AbsProxyFragment
 import com.example.permission.base.IPermissionResultsCallback
-import com.example.permission.base.IProxyFragment
 import com.example.permission.base.PermissionResult
 import com.example.permission.utils.LogUtil
+import com.example.permission.utils.PermissionUtil
+import com.example.permission.utils.SettingsUtil
+import com.example.permission.utils.SpecialUtil
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 申请权限的代理Fragment, 使用新的Activity Result API实现：https://developer.android.com/training/basics/intents/result#separate
  * Created by 陈健宇 at 2021/8/18
  */
-internal class ProxyFragmentV2 : Fragment(), IProxyFragment{
+internal class ProxyFragmentV2 : AbsProxyFragment(){
 
     companion object {
         private const val TAG = "ProxyFragmentV2"
-        private const val INITIAL_REQUEST_CODE = 0x00000100
+        private const val INITIAL_REQUEST_CODE = 0x0000100
 
         fun newInstance(): ProxyFragmentV2 {
             return ProxyFragmentV2()
         }
     }
 
-    private val normalPermissionsLauncherToCallback = ArrayMap<ActivityResultLauncher<Array<String>>, IPermissionResultsCallback>()
-    private lateinit var normalPermissionsLauncher: ActivityResultLauncher<Array<String>>
-    private lateinit var specialPermissionLauncher: ActivityResultLauncher<Intent>
+    private val host = requestActivity()
     private val registry = requireActivity().activityResultRegistry
-    private val nextLocalRequestCode = AtomicInteger()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        normalPermissionsLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
-            val permissionResults = ArrayList<PermissionResult>(results.size)
-            results.keys.forEachIndexed{ index, name ->
-                permissionResults[index] = PermissionResult(name, results[name]!!)
-            }
-            normalPermissionsLauncherToCallback[normalPermissionsLauncher]?.onPermissionResults(permissionResults)
-        }
-
-        specialPermissionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-
-        }
-    }
+    private val viewModel: ProxyFragmentV2ViewModel = getViewModel(this, ProxyFragmentV2ViewModel::class.java)
+    private val requestPermissionsLaunchers = viewModel.requestPermissionsLaunchers
+    private val startActivityLaunchers = viewModel.startActivityLaunchers
+    private val nextLocalRequestCode = viewModel.nextLocalRequestCode
 
     override fun requestActivity(): Activity {
         return requireActivity()
@@ -65,26 +51,85 @@ internal class ProxyFragmentV2 : Fragment(), IProxyFragment{
     }
 
     override fun gotoSettingsForCheckResults(permissions: List<String>, callback: IPermissionResultsCallback) {
-        TODO("Not yet implemented")
+        startSettingsForCheckResults(permissions.toTypedArray(), callback)
     }
 
-    private fun requestNormalPermissions(permissions: Array<String>, callback: IPermissionResultsCallback){
+    override fun requestNormalPermissions(permissions: Array<String>, callback: IPermissionResultsCallback){
         LogUtil.d(TAG, "requestNormalPermissions: permissions = $permissions")
         if(permissions.isEmpty()){
             callback.onPermissionResults(emptyList())
             return
         }
-        normalPermissionsLauncherToCallback[normalPermissionsLauncher] = callback
+        val requestCode = generateRequestCode(requestPermissionsLaunchers)
+        val normalPermissionsLauncher = registerForResults(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+            requestPermissionsLaunchers[requestCode].unregister()
+            requestPermissionsLaunchers.remove(requestCode)
+            val permissionResults = ArrayList<PermissionResult>(results.size)
+            results.keys.forEachIndexed{ index, name ->
+                permissionResults[index] = PermissionResult(name, results[name]!!)
+            }
+            callback.onPermissionResults(permissionResults)
+            LogUtil.d(TAG, "onRequestPermissionsResult: permissionResults = $permissionResults")
+        }
+        requestPermissionsLaunchers.put(requestCode, normalPermissionsLauncher)
         normalPermissionsLauncher.launch(permissions)
     }
 
-    private fun requestSpecialPermissions(permissions: Array<String>, callback: IPermissionResultsCallback){
+    override fun requestSpecialPermissions(permissions: Array<String>, callback: IPermissionResultsCallback){
         LogUtil.d(TAG, "requestSpecialPermissions: permissions = $permissions")
         if(permissions.isEmpty()){
             callback.onPermissionResults(emptyList())
             return
         }
+        val requestCode = generateRequestCode(startActivityLaunchers)
+        val specialPermissions = SpecialArray(permissions)
+        val requestSpecialPermission = {launcher: ActivityResultLauncher<Intent>, permission: String ->
+            launcher.launch(SpecialUtil.getIntent(host, permission))
+        }
+        val specialPermissionLauncher = registerForResults(ActivityResultContracts.StartActivityForResult()) {
+            specialPermissions.setPriorGrantResult(PermissionUtil.checkSpecialPermission(host, specialPermissions.priorPermission()))
+            val specialPermissionLauncher = startActivityLaunchers[requestCode]
+            if(specialPermissions.hasNext()){
+                requestSpecialPermission.invoke(specialPermissionLauncher, specialPermissions.nextPermission())
+            }else{
+                specialPermissionLauncher.unregister()
+                startActivityLaunchers.remove(requestCode)
+                val permissionResults = ArrayList<PermissionResult>(specialPermissions.size())
+                specialPermissions.getGrantResults().forEachIndexed { index, granted ->
+                    permissionResults[index] = PermissionResult(specialPermissions.get(index), granted, special = true)
+                }
+                callback.onPermissionResults(permissionResults)
+                LogUtil.d(TAG, "onStartActivityForResults: permissionResults = $permissionResults")
+            }
+        }
+        startActivityLaunchers.put(requestCode, specialPermissionLauncher)
+        requestSpecialPermission.invoke(specialPermissionLauncher, specialPermissions.nextPermission())
+    }
 
+    override fun startSettingsForCheckResults(permissions: Array<String>, callback: IPermissionResultsCallback) {
+        LogUtil.d(TAG, "startSettingsActivityForResults: permissions = $permissions")
+        if(permissions.isEmpty()){
+            callback.onPermissionResults(emptyList())
+            return
+        }
+        val requestCode = generateRequestCode(startActivityLaunchers)
+        val settingsLauncher = registerForResults(ActivityResultContracts.StartActivityForResult()){
+            startActivityLaunchers[requestCode].unregister()
+            startActivityLaunchers.remove(requestCode)
+            val permissionResults = ArrayList<PermissionResult>(permissions.size)
+            permissions.forEachIndexed { index, permission ->
+                val permissionResult = if(PermissionUtil.isSpecialPermission(permission)){
+                    PermissionResult(permission, PermissionUtil.checkSpecialPermission(host, permission), special = true)
+                }else{
+                    PermissionResult(permission, PermissionUtil.checkNormalPermission(host, permission))
+                }
+                permissionResults[index] = permissionResult
+            }
+            callback.onPermissionResults(permissionResults)
+            LogUtil.d(TAG, "onStartActivityForResults: permissionResults = $permissionResults")
+        }
+        startActivityLaunchers.put(requestCode, settingsLauncher)
+        settingsLauncher.launch(SettingsUtil.getIntent(host))
     }
 
     private fun <I, O> registerForResults(contract: ActivityResultContract<I, O>, callback: ActivityResultCallback<O>): ActivityResultLauncher<I> {
@@ -95,4 +140,11 @@ internal class ProxyFragmentV2 : Fragment(), IProxyFragment{
         return "$TAG#${nextLocalRequestCode.getAndIncrement()}"
     }
 
+    private fun generateRequestCode(list: SparseArray<*>): Int{
+        var requestCode: Int
+        do {
+            requestCode = PermissionUtil.generateRandomCode(initialCode = INITIAL_REQUEST_CODE)
+        } while (list.indexOfKey(requestCode) >= 0)
+        return requestCode
+    }
 }

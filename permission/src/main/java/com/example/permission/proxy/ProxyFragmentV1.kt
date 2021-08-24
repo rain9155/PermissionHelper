@@ -7,9 +7,8 @@ import android.os.Build
 import android.os.Bundle
 import android.util.SparseArray
 import androidx.annotation.RequiresApi
-import androidx.fragment.app.Fragment
+import com.example.permission.base.AbsProxyFragment
 import com.example.permission.base.IPermissionResultsCallback
-import com.example.permission.base.IProxyFragment
 import com.example.permission.base.PermissionResult
 import com.example.permission.utils.LogUtil
 import com.example.permission.utils.PermissionUtil
@@ -20,11 +19,11 @@ import com.example.permission.utils.SpecialUtil
  * 申请权限的代理Fragment
  * Created by 陈健宇 at 2019/3/25
  */
-internal class ProxyFragmentV1 : Fragment(), IProxyFragment {
+internal class ProxyFragmentV1 : AbsProxyFragment() {
 
     companion object {
         private const val TAG = "ProxyFragmentV1"
-        private const val INITIAL_REQUEST_CODE = 0x00000100
+        private const val INITIAL_REQUEST_CODE = 0x0000100
 
         fun newInstance(): ProxyFragmentV1 {
             return ProxyFragmentV1()
@@ -32,14 +31,10 @@ internal class ProxyFragmentV1 : Fragment(), IProxyFragment {
     }
 
     private val host = requestActivity()
-    private val permissionResultCallbacks = SparseArray<IPermissionResultsCallback>()
-    private val waitForCheckPermissions = SparseArray<Array<String>>()
-    private val waitForCheckSpecialPermissions = SparseArray<SpecialArray>()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        retainInstance = true
-    }
+    private val viewModel: ProxyFragmentV1ViewModel = getViewModel(this, ProxyFragmentV1ViewModel::class.java)
+    private val permissionResultCallbacks = viewModel.permissionResultCallbacks
+    private val waitForCheckPermissions = viewModel.waitForCheckPermissions
+    private val waitForCheckSpecialPermissions = viewModel.waitForCheckSpecialPermissions
 
     override fun requestActivity(): Activity {
         return requireActivity()
@@ -55,10 +50,44 @@ internal class ProxyFragmentV1 : Fragment(), IProxyFragment {
     }
 
     override fun gotoSettingsForCheckResults(permissions: List<String>, callback: IPermissionResultsCallback) {
-        startSettingsActivityForCheckResults(permissions.toTypedArray(), callback)
+        startSettingsForCheckResults(permissions.toTypedArray(), callback)
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
+    override fun requestNormalPermissions(permissions: Array<String>, callback: IPermissionResultsCallback) {
+        LogUtil.d(TAG, "requestNormalPermissions: permissions = $permissions")
+        if(permissions.isEmpty()){
+            callback.onPermissionResults(emptyList())
+            return
+        }
+        val requestCode = generateRequestCode()
+        permissionResultCallbacks.put(requestCode, callback)
+        requestPermissions(permissions, requestCode)
+    }
+
+    override fun requestSpecialPermissions(permissions: Array<String>, callback: IPermissionResultsCallback){
+        LogUtil.d(TAG, "requestSpecialPermissions: permissions = $permissions")
+        if(permissions.isEmpty()){
+            callback.onPermissionResults(emptyList())
+            return
+        }
+        val requestCode = generateRequestCode()
+        permissionResultCallbacks.put(requestCode, callback)
+        waitForCheckSpecialPermissions.put(requestCode, SpecialArray(permissions))
+        requestSpecialPermission(waitForCheckSpecialPermissions[requestCode].nextPermission(), requestCode)
+    }
+
+    override fun startSettingsForCheckResults(permissions: Array<String>, callback: IPermissionResultsCallback){
+        LogUtil.d(TAG, "startSettingsActivityForResults: permissions = $permissions")
+        if(permissions.isEmpty()){
+            callback.onPermissionResults(emptyList())
+            return
+        }
+        val requestCode = generateRequestCode()
+        permissionResultCallbacks.put(requestCode, callback)
+        waitForCheckPermissions.put(requestCode, permissions)
+        startActivityForResult(SettingsUtil.getIntent(host), requestCode)
+    }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         val callback = permissionResultCallbacks[requestCode]
@@ -121,44 +150,8 @@ internal class ProxyFragmentV1 : Fragment(), IProxyFragment {
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
-    private fun requestNormalPermissions(permissions: Array<String>, callback: IPermissionResultsCallback) {
-        LogUtil.d(TAG, "requestNormalPermissions: permissions = $permissions")
-        if(permissions.isEmpty()){
-            callback.onPermissionResults(emptyList())
-            return
-        }
-        val requestCode = generateRequestCode()
-        permissionResultCallbacks.put(requestCode, callback)
-        requestPermissions(permissions, requestCode)
-    }
-
-    private fun requestSpecialPermissions(permissions: Array<String>, callback: IPermissionResultsCallback){
-        LogUtil.d(TAG, "requestSpecialPermissions: permissions = $permissions")
-        if(permissions.isEmpty()){
-            callback.onPermissionResults(emptyList())
-            return
-        }
-        val requestCode = generateRequestCode()
-        permissionResultCallbacks.put(requestCode, callback)
-        waitForCheckSpecialPermissions.put(requestCode, SpecialArray(permissions))
-        requestSpecialPermission(waitForCheckSpecialPermissions[requestCode].nextPermission(), requestCode)
-    }
-
     private fun requestSpecialPermission(permission: String, requestCode: Int){
         startActivityForResult(SpecialUtil.getIntent(host, permission), requestCode)
-    }
-
-    private fun startSettingsActivityForCheckResults(permissions: Array<String>, callback: IPermissionResultsCallback){
-        LogUtil.d(TAG, "startSettingsActivityForResults: permissions = $permissions")
-        if(permissions.isEmpty()){
-            callback.onPermissionResults(emptyList())
-            return
-        }
-        val requestCode = generateRequestCode()
-        permissionResultCallbacks.put(requestCode, callback)
-        waitForCheckPermissions.put(requestCode, permissions)
-        startActivityForResult(SettingsUtil.getIntent(host), requestCode)
     }
 
     private fun generateRequestCode(): Int{

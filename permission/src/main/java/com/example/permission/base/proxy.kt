@@ -2,7 +2,11 @@ package com.example.permission.base
 
 import android.app.Activity
 import android.content.Context
+import android.util.SparseArray
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import com.example.permission.proxy.ProxyFragmentV1
+import com.example.permission.utils.PermissionUtil
 
 /**
  * 内部统一权限回调处理、接口定义
@@ -39,5 +43,18 @@ internal interface IProxyFragment {
     fun requestSpecialPermissions(permissions: List<String>, callback: IPermissionResultsCallback)
 
     fun gotoSettingsForCheckResults(permissions: List<String>, callback: IPermissionResultsCallback)
+
+}
+
+/**
+ * 代理fragment的公共实现
+ */
+internal abstract class AbsProxyFragment : Fragment(), IProxyFragment {
+
+    protected abstract fun requestNormalPermissions(permissions: Array<String>, callback: IPermissionResultsCallback)
+
+    protected abstract fun requestSpecialPermissions(permissions: Array<String>, callback: IPermissionResultsCallback)
+
+    protected abstract fun startSettingsForCheckResults(permissions: Array<String>, callback: IPermissionResultsCallback)
 
 }

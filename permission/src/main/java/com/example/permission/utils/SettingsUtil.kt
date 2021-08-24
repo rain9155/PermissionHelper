@@ -20,9 +20,10 @@ object SettingsUtil {
     /**
      * 获取不同厂商的权限设置界面的intent，不满足条件时返回应用详情界面的intent
      */
+    @SuppressLint("QueryPermissionsNeeded")
     fun getIntent(context: Context): Intent{
         val brand = Build.BRAND.toLowerCase(Locale.ROOT)
-        return if (TextUtils.equals(brand, "redmi") || TextUtils.equals(brand, "xiaomi")) {
+        val intent = if (TextUtils.equals(brand, "redmi") || TextUtils.equals(brand, "xiaomi")) {
             getMEIZUIntent(context)
         } else if (TextUtils.equals(brand, "meizu")) {
             getMEIZUIntent(context)
@@ -31,6 +32,11 @@ object SettingsUtil {
         } else if(TextUtils.equals(brand, "oppo")){
             getOPPOIntent()
         }else {
+            getAppDetailIntent(context)
+        }
+        return if(intent.resolveActivityInfo(context.packageManager, PackageManager.MATCH_DEFAULT_ONLY) != null){
+            intent
+        }else{
             getAppDetailIntent(context)
         }
     }

@@ -4,7 +4,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.example.permission.base.IProxyFragment
 import com.example.permission.utils.LogUtil
-import java.lang.Exception
 
 /**
  * 管理代理Fragment的创建与安装
