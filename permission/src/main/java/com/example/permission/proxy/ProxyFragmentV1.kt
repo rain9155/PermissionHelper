@@ -106,9 +106,9 @@ internal class ProxyFragmentV1 : AbsProxyFragment() {
                 permissionResults[index] = PermissionResult(permissions[index], grantResult == PackageManager.PERMISSION_GRANTED)
             }
             callback.onPermissionResults(permissionResults)
-            LogUtil.d(TAG, "onRequestPermissionsResult: requestCode = $requestCode, permissionResults = $permissionResults")
+            LogUtil.d(TAG, "onRequestNormalPermissionsResult: requestCode = $requestCode, permissionResults = $permissionResults")
         }else{
-            LogUtil.d(TAG, "onRequestPermissionsResult: permission result callback is empty, requestCode = $requestCode, permissions = $permissions")
+            LogUtil.d(TAG, "onRequestNormalPermissionsResult: permission result callback is empty, requestCode = $requestCode, permissions = $permissions")
         }
     }
 
@@ -130,9 +130,9 @@ internal class ProxyFragmentV1 : AbsProxyFragment() {
                     permissionResults[index] = permissionResult
                 }
                 callback.onPermissionResults(permissionResults)
-                LogUtil.d(TAG, "onActivityResult: requestCode = $requestCode, permissionResults = $permissionResults")
+                LogUtil.d(TAG, "onCheckPermissionsResult: requestCode = $requestCode, permissionResults = $permissionResults")
             }else{
-                LogUtil.d(TAG, "onActivityResult: permission result callback is empty, requestCode = $requestCode, permissions = $permissions")
+                LogUtil.d(TAG, "onCheckPermissionsResult: permission result callback is empty, requestCode = $requestCode, permissions = $permissions")
             }
             return
         }
@@ -151,9 +151,9 @@ internal class ProxyFragmentV1 : AbsProxyFragment() {
                     permissionResults[index] = PermissionResult(specialPermissions.get(index), granted, special = true)
                 }
                 callback.onPermissionResults(permissionResults)
-                LogUtil.d(TAG, "onActivityResult: requestCode = $requestCode, permissionResults = $permissionResults")
+                LogUtil.d(TAG, "onRequestSpecialPermissionsResult: requestCode = $requestCode, permissionResults = $permissionResults")
             }else{
-                LogUtil.d(TAG, "onActivityResult: permission result callback is empty, requestCode = $requestCode, permissions = ${specialPermissions.getPermissions()}")
+                LogUtil.d(TAG, "onRequestSpecialPermissionsResult: permission result callback is empty, requestCode = $requestCode, permissions = ${specialPermissions.getPermissions()}")
             }
         }
     }
