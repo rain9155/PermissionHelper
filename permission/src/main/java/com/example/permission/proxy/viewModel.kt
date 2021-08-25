@@ -2,6 +2,8 @@ package com.example.permission.proxy
 
 import android.content.Intent
 import android.util.SparseArray
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -57,20 +59,20 @@ internal class ProxyFragmentV1ViewModel : ViewModel() {
  */
 internal class ProxyFragmentV2ViewModel : ViewModel() {
 
-    val requestPermissionsLaunchers = SparseArray<ActivityResultLauncher<Array<String>>>()
-    val startActivityLaunchers = SparseArray<ActivityResultLauncher<Intent>>()
-    val nextLocalRequestCode = AtomicInteger()
+    val requestPermissionsLauncherAndCallbacks = SparseArray<LauncherAndCallback<Array<String>, Map<String, Boolean>>>()
+    val startActivityLauncherAndCallbacks = SparseArray<LauncherAndCallback<Intent, ActivityResult>>()
 
     override fun onCleared() {
         super.onCleared()
-        requestPermissionsLaunchers.forEach { launcher ->
-            launcher.unregister()
+        requestPermissionsLauncherAndCallbacks.forEach { launcherAndCallback ->
+            launcherAndCallback.launcher.unregister()
         }
-        startActivityLaunchers.forEach { launcher ->
-            launcher.unregister()
+        startActivityLauncherAndCallbacks.forEach { launcherAndCallback ->
+            launcherAndCallback.launcher.unregister()
         }
-        requestPermissionsLaunchers.clear()
-        startActivityLaunchers.clear()
+        requestPermissionsLauncherAndCallbacks.clear()
+        startActivityLauncherAndCallbacks.clear()
     }
 
+    class LauncherAndCallback<I, O>(val key: Int, var launcher: ActivityResultLauncher<I>, val callback: ActivityResultCallback<O>)
 }

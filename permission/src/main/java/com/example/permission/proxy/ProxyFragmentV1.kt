@@ -88,6 +88,14 @@ internal class ProxyFragmentV1 : AbsProxyFragment() {
         startActivityForResult(SettingsUtil.getIntent(host), requestCode)
     }
 
+    override fun generateRequestCode(): Int{
+        var requestCode: Int
+        do {
+            requestCode = PermissionUtil.generateRandomCode(initialCode = INITIAL_REQUEST_CODE)
+        } while (permissionResultCallbacks.indexOfKey(requestCode) >= 0)
+        return requestCode
+    }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         val callback = permissionResultCallbacks[requestCode]
@@ -152,14 +160,6 @@ internal class ProxyFragmentV1 : AbsProxyFragment() {
 
     private fun requestSpecialPermission(permission: String, requestCode: Int){
         startActivityForResult(SpecialUtil.getIntent(host, permission), requestCode)
-    }
-
-    private fun generateRequestCode(): Int{
-        var requestCode: Int
-        do {
-            requestCode = PermissionUtil.generateRandomCode(initialCode = INITIAL_REQUEST_CODE)
-        } while (permissionResultCallbacks.indexOfKey(requestCode) >= 0)
-        return requestCode
     }
 
 }

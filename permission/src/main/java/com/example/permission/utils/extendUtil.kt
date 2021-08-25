@@ -21,3 +21,11 @@ inline fun <T> SparseArray<T>.forEachWithIndex(action: (Int, T) -> Unit){
         ++index
     }
 }
+
+fun <T> SparseArray<T>.isNotEmpty(): Boolean{
+    return size() > 0
+}
+
+fun <T> SparseArray<T>.isEmpty(): Boolean{
+    return size() == 0
+}

@@ -57,4 +57,6 @@ internal abstract class AbsProxyFragment : Fragment(), IProxyFragment {
 
     protected abstract fun startSettingsForCheckResults(permissions: Array<String>, callback: IPermissionResultsCallback)
 
+    protected abstract fun generateRequestCode(): Int
+
 }
