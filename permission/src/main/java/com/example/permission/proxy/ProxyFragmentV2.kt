@@ -3,6 +3,8 @@ package com.example.permission.proxy
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.SparseArray
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultCallback
@@ -26,6 +28,9 @@ internal class ProxyFragmentV2 : AbsProxyFragment(){
     companion object {
         private const val TAG = "ProxyFragmentV2"
         private const val INITIAL_REQUEST_CODE = 0x0000100
+        private const val MSG_FINISH_REQUEST_NORMAL_PERMISSIONS = 0x0000
+        private const val MSG_FINISH_REQUEST_SPECIAL_PERMISSIONS = 0x0001
+        private const val MSG_FINISH_CHECK_PERMISSIONS = 0x0002
 
         fun newInstance(): ProxyFragmentV2 {
             return ProxyFragmentV2()
@@ -43,14 +48,47 @@ internal class ProxyFragmentV2 : AbsProxyFragment(){
     private val waitForCheckSpecialPermissions = viewModel.waitForCheckSpecialPermissions
     private val launchedLaunchers = SparseArray<ActivityResultLauncher<*>>()
 
+    private val removeHandler = Handler(Looper.getMainLooper()) { message ->
+        val requestCode = message.obj as Int
+        launchedLaunchers[requestCode]?.unregister()
+        launchedLaunchers.remove(requestCode)
+        permissionResultCallbacks.remove(requestCode)
+        when(message.what){
+            MSG_FINISH_REQUEST_NORMAL_PERMISSIONS -> {
+                requestNormalPermissionsLaunchedKeys.remove(requestCode)
+            }
+            MSG_FINISH_REQUEST_SPECIAL_PERMISSIONS -> {
+                requestSpecialPermissionsLaunchedKeys.remove(requestCode)
+                waitForCheckSpecialPermissions.remove(requestCode)
+            }
+            MSG_FINISH_CHECK_PERMISSIONS -> {
+                checkPermissionsLaunchedKeys.remove(requestCode)
+                waitForCheckPermissions.remove(requestCode)
+            }
+            else -> {
+                return@Handler false
+            }
+        }
+        return@Handler true
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if(requestSpecialPermissionsLaunchedKeys.isNotEmpty()){
             requestSpecialPermissionsLaunchedKeys.forEach { requestCode ->
+                registerForRequestNormalPermissionsResult(requestCode, permissionResultCallbacks[requestCode])
             }
+        }
+
+        if(requestSpecialPermissionsLaunchedKeys.isNotEmpty()){
             requestSpecialPermissionsLaunchedKeys.forEach { requestCode ->
+                registerForRequestSpecialPermissionsResult(requestCode, waitForCheckSpecialPermissions[requestCode], permissionResultCallbacks[requestCode])
             }
+        }
+
+        if(checkPermissionsLaunchedKeys.isNotEmpty()){
             checkPermissionsLaunchedKeys.forEach { requestCode ->
+                registerForCheckPermissionsResult(requestCode, waitForCheckPermissions[requestCode], permissionResultCallbacks[requestCode])
             }
         }
     }
@@ -60,6 +98,8 @@ internal class ProxyFragmentV2 : AbsProxyFragment(){
         launchedLaunchers.forEach { launcher ->
             launcher.unregister()
         }
+        launchedLaunchers.clear()
+        removeHandler.removeCallbacksAndMessages(null)
     }
 
     override fun requestActivity(): Activity {
@@ -85,12 +125,8 @@ internal class ProxyFragmentV2 : AbsProxyFragment(){
             return
         }
         val requestCode = generateRequestCode()
-        val resultCallback = HandleRequestNormalPermissionsResultCallback(callback)
-        val launcher = registerForResultsWithNotLifecycle(requestCode, ActivityResultContracts.RequestMultiplePermissions(), resultCallback)
-        resultCallback.launcher = launcher
+        val launcher = registerForRequestNormalPermissionsResult(requestCode, callback)
         requestNormalPermissionsLaunchedKeys.add(requestCode)
-        launchedLaunchers.put(requestCode, launcher)
-        permissionResultCallbacks.put(requestCode, callback)
         launcher.launch(permissions)
     }
 
@@ -102,18 +138,8 @@ internal class ProxyFragmentV2 : AbsProxyFragment(){
         }
         val requestCode = generateRequestCode()
         val specialPermissions = SpecialArray(permissions)
-        val resultCallback = HandleRequestSpecialPermissionsResultCallback(
-            host,
-            specialPermissions,
-            ::requestSpecialPermission,
-            callback
-        )
-        val launcher = registerForResultsWithNotLifecycle(requestCode, ActivityResultContracts.StartActivityForResult(), resultCallback)
-        resultCallback.launcher = launcher
+        val launcher = registerForRequestSpecialPermissionsResult(requestCode, specialPermissions, callback)
         requestSpecialPermissionsLaunchedKeys.add(requestCode)
-        launchedLaunchers.put(requestCode, launcher)
-        waitForCheckSpecialPermissions.put(requestCode, specialPermissions)
-        permissionResultCallbacks.put(requestCode, callback)
         requestSpecialPermission(launcher, specialPermissions.nextPermission())
     }
 
@@ -124,17 +150,8 @@ internal class ProxyFragmentV2 : AbsProxyFragment(){
             return
         }
         val requestCode = generateRequestCode()
-        val resultCallback = HandleCheckPermissionsResultCallback(
-            host,
-            permissions,
-            callback
-        )
-        val launcher = registerForResultsWithNotLifecycle(requestCode, ActivityResultContracts.StartActivityForResult(), resultCallback)
-        resultCallback.launcher = launcher
+        val launcher = registerForCheckPermissionsResult(requestCode, permissions, callback)
         checkPermissionsLaunchedKeys.add(requestCode)
-        launchedLaunchers.put(requestCode, launcher)
-        waitForCheckPermissions.put(requestCode, permissions)
-        permissionResultCallbacks.put(requestCode, callback)
         launcher.launch(SettingsUtil.getIntent(host))
     }
 
@@ -149,6 +166,60 @@ internal class ProxyFragmentV2 : AbsProxyFragment(){
         return requestCode
     }
 
+    private fun registerForRequestNormalPermissionsResult(requestCode: Int, callback: IPermissionResultsCallback): ActivityResultLauncher<Array<String>> {
+        if(launchedLaunchers.containKey(requestCode)){
+            launchedLaunchers[requestCode].unregister()
+        }
+        val resultCallback = HandleRequestNormalPermissionsResultCallback(
+            requestCode,
+            callback
+        )
+        val launcher = registerForResultsWithNotLifecycle(requestCode, ActivityResultContracts.RequestMultiplePermissions(), resultCallback)
+        launchedLaunchers.put(requestCode, launcher)
+        permissionResultCallbacks.put(requestCode, callback)
+        return launcher
+    }
+
+    private fun registerForRequestSpecialPermissionsResult(requestCode: Int, specialPermissions: SpecialArray, callback: IPermissionResultsCallback): ActivityResultLauncher<Intent>{
+        if(launchedLaunchers.containKey(requestCode)){
+            launchedLaunchers[requestCode].unregister()
+        }
+        val resultCallback = HandleRequestSpecialPermissionsResultCallback(
+            requestCode,
+            specialPermissions,
+            ::requestSpecialPermission,
+            callback
+        )
+        val launcher = registerForResultsWithNotLifecycle(requestCode, ActivityResultContracts.StartActivityForResult(), resultCallback)
+        resultCallback.launcher = launcher
+        launchedLaunchers.put(requestCode, launcher)
+        waitForCheckSpecialPermissions.put(requestCode, specialPermissions)
+        permissionResultCallbacks.put(requestCode, callback)
+        return launcher
+    }
+
+    private fun registerForCheckPermissionsResult(requestCode: Int, permissions: Array<String>, callback: IPermissionResultsCallback): ActivityResultLauncher<Intent> {
+        if(launchedLaunchers.containKey(requestCode)){
+            launchedLaunchers[requestCode].unregister()
+        }
+        val resultCallback = HandleCheckPermissionsResultCallback(
+            requestCode,
+            permissions,
+            callback
+        )
+        val launcher = registerForResultsWithNotLifecycle(requestCode, ActivityResultContracts.StartActivityForResult(), resultCallback)
+        launchedLaunchers.put(requestCode, launcher)
+        waitForCheckPermissions.put(requestCode, permissions)
+        permissionResultCallbacks.put(requestCode, callback)
+        return launcher
+    }
+
+    /**
+     * 由于带lifecycle的[androidx.activity.result.ActivityResultRegistry.register]方法需要在STARTED之前调用，不符合当前场景
+     * 所以使用不带lifecycle的[androidx.activity.result.ActivityResultRegistry.register]方法注册回调，需要自己处理以下两个场景：
+     * 1、配置更改后Fragment销毁重建时的数据保存和恢复
+     * 2、只在Fragment可见时才进行结果回调
+     */
     private fun <I, O> registerForResultsWithNotLifecycle(key: Int, contract: ActivityResultContract<I, O>, callback: ActivityResultCallback<O>): ActivityResultLauncher<I> {
         return registry.register(key.toString(), contract, callback)
     }
@@ -157,28 +228,27 @@ internal class ProxyFragmentV2 : AbsProxyFragment(){
         launcher?.launch(SpecialUtil.getIntent(host, permission))
     }
 
-    class HandleRequestNormalPermissionsResultCallback(
-            private val callback: IPermissionResultsCallback
+    inner class HandleRequestNormalPermissionsResultCallback(
+        private val requestCode: Int,
+        private val callback: IPermissionResultsCallback
     ) : ActivityResultCallback<Map<String, Boolean>>{
 
-        var launcher: ActivityResultLauncher<Array<String>>? = null
-
         override fun onActivityResult(result: Map<String, Boolean>) {
-            launcher?.unregister()
+            removeHandler.obtainMessage(MSG_FINISH_REQUEST_NORMAL_PERMISSIONS, requestCode).sendToTarget()
             val permissionResults = ArrayList<PermissionResult>(result.size)
             result.keys.forEachIndexed{ index, name ->
-                permissionResults[index] = PermissionResult(name, result[name]!!)
+                permissionResults[index] = PermissionResult(name, result[name] ?: error("permission name is null"))
             }
             callback.onPermissionResults(permissionResults)
             LogUtil.d(TAG, "onRequestNormalPermissionsResult: permissionResults = $permissionResults")
         }
     }
 
-    class HandleRequestSpecialPermissionsResultCallback(
-            private val host: Activity,
-            private val specialPermissions: SpecialArray,
-            private val requestSpecialPermission: (ActivityResultLauncher<Intent>?, String) -> Unit,
-            private val callback: IPermissionResultsCallback
+    inner class HandleRequestSpecialPermissionsResultCallback(
+        private val requestCode: Int,
+        private val specialPermissions: SpecialArray,
+        private val requestSpecialPermission: (ActivityResultLauncher<Intent>?, String) -> Unit,
+        private val callback: IPermissionResultsCallback
     ) : ActivityResultCallback<ActivityResult>{
 
         var launcher: ActivityResultLauncher<Intent>? = null
@@ -188,7 +258,7 @@ internal class ProxyFragmentV2 : AbsProxyFragment(){
             if(specialPermissions.hasNext()){
                 requestSpecialPermission.invoke(launcher, specialPermissions.nextPermission())
             }else{
-                launcher?.unregister()
+                removeHandler.obtainMessage(MSG_FINISH_REQUEST_SPECIAL_PERMISSIONS, requestCode).sendToTarget()
                 val permissionResults = ArrayList<PermissionResult>(specialPermissions.size())
                 specialPermissions.getGrantResults().forEachIndexed { index, granted ->
                     permissionResults[index] = PermissionResult(specialPermissions.get(index), granted, special = true)
@@ -199,16 +269,14 @@ internal class ProxyFragmentV2 : AbsProxyFragment(){
         }
     }
 
-    class HandleCheckPermissionsResultCallback(
-        private val host: Activity,
+    inner class HandleCheckPermissionsResultCallback(
+        private val requestCode: Int,
         private val permissions: Array<String>,
         private val callback: IPermissionResultsCallback
     ) : ActivityResultCallback<ActivityResult>{
 
-        var launcher: ActivityResultLauncher<Intent>? = null
-
         override fun onActivityResult(result: ActivityResult?) {
-            launcher?.unregister()
+            removeHandler.obtainMessage(MSG_FINISH_CHECK_PERMISSIONS, requestCode).sendToTarget()
             val permissionResults = ArrayList<PermissionResult>(permissions.size)
             permissions.forEachIndexed { index, permission ->
                 val permissionResult = if(PermissionUtil.isSpecialPermission(permission)){

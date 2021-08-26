@@ -26,6 +26,10 @@ fun <T> SparseArray<T>.isNotEmpty(): Boolean{
     return size() > 0
 }
 
-fun <T> SparseArray<T>.isEmpty(): Boolean{
-    return size() == 0
+fun <T> SparseArray<T>?.isEmpty(): Boolean{
+    return this == null || !isNotEmpty()
+}
+
+fun <T> SparseArray<T>.containKey(key: Int): Boolean{
+    return indexOfKey(key) >= 0
 }

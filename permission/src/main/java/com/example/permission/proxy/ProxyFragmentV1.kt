@@ -10,9 +10,9 @@ import androidx.annotation.RequiresApi
 import com.example.permission.base.AbsProxyFragment
 import com.example.permission.base.IPermissionResultsCallback
 import com.example.permission.base.PermissionResult
+import com.example.permission.utils.*
 import com.example.permission.utils.LogUtil
 import com.example.permission.utils.PermissionUtil
-import com.example.permission.utils.SettingsUtil
 import com.example.permission.utils.SpecialUtil
 
 /**
@@ -92,7 +92,7 @@ internal class ProxyFragmentV1 : AbsProxyFragment() {
         var requestCode: Int
         do {
             requestCode = PermissionUtil.generateRandomCode(initialCode = INITIAL_REQUEST_CODE)
-        } while (permissionResultCallbacks.indexOfKey(requestCode) >= 0)
+        } while (permissionResultCallbacks.containKey(requestCode))
         return requestCode
     }
 

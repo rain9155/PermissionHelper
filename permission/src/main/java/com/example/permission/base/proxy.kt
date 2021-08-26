@@ -2,10 +2,13 @@ package com.example.permission.base
 
 import android.app.Activity
 import android.content.Context
+import android.os.Bundle
+import android.util.Log
 import android.util.SparseArray
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.example.permission.proxy.ProxyFragmentV1
+import com.example.permission.utils.LogUtil
 import com.example.permission.utils.PermissionUtil
 
 /**
@@ -51,6 +54,10 @@ internal interface IProxyFragment {
  */
 internal abstract class AbsProxyFragment : Fragment(), IProxyFragment {
 
+    companion object{
+        private const val TAG = "AbsProxyFragment"
+    }
+
     protected abstract fun requestNormalPermissions(permissions: Array<String>, callback: IPermissionResultsCallback)
 
     protected abstract fun requestSpecialPermissions(permissions: Array<String>, callback: IPermissionResultsCallback)
@@ -59,4 +66,33 @@ internal abstract class AbsProxyFragment : Fragment(), IProxyFragment {
 
     protected abstract fun generateRequestCode(): Int
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        LogUtil.d(TAG, "onCreate")
+    }
+
+    override fun onStart() {
+        super.onStart()
+        LogUtil.d(TAG, "onStart")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        LogUtil.d(TAG, "onResume")
+    }
+
+    override fun onPause() {
+        super.onPause()
+        LogUtil.d(TAG, "onPause")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        LogUtil.d(TAG, "onStop")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        LogUtil.d(TAG, "onDestroy")
+    }
 }
