@@ -101,7 +101,7 @@ class PermissionHelper private constructor(private val proxyFragment: IProxyFrag
         val originRequest = Request(
             this.activity,
             this.proxyFragment,
-            this.requestPermissions.toList(),
+            this.requestPermissions.toMutableList(),
             this.requestCallback,
             this.rejectedCallback,
             this.rejectedForeverCallback,

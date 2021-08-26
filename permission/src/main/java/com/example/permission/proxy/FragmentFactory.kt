@@ -1,5 +1,6 @@
 package com.example.permission.proxy
 
+import androidx.annotation.IntDef
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.example.permission.base.IProxyFragment
@@ -14,12 +15,17 @@ internal class FragmentFactory(private val fragmentManager: FragmentManager) {
     companion object{
         private const val TAG = "FragmentFactory"
         private const val TAG_FRAGMENT = "ProxyFragment"
+        private const val VERSION_AUTO = 0x0000
+        private const val VERSION_V1 = 0x0001
+        private const val VERSION_V2 = 0x0002
     }
+
+    @Version var version = VERSION_AUTO
 
     fun installFragment(): IProxyFragment {
         var fragment = fragmentManager.findFragmentByTag(TAG_FRAGMENT)
         if(fragment == null){
-            val isInstall = if(tryFindActivityResultRegistry()){
+            val isInstall = if(selectV2()){
                 LogUtil.d(TAG, "installFragment: install ProxyFragmentV2")
                 realInstallFragment(ProxyFragmentV2.newInstance())
             }else{
@@ -34,14 +40,13 @@ internal class FragmentFactory(private val fragmentManager: FragmentManager) {
         return fragment as IProxyFragment
     }
 
-    private fun realInstallFragment(fragment: Fragment): Boolean{
-        val transaction = fragmentManager.beginTransaction().add(fragment, TAG_FRAGMENT)
-        return try {
-            transaction.commitNowAllowingStateLoss()
-            true
-        } catch (e: IllegalStateException) {
-            e.printStackTrace()
+    private fun selectV2(): Boolean{
+        return if(version == VERSION_V1){
             false
+        }else if(version == VERSION_V2){
+            true
+        }else{
+            tryFindActivityResultRegistry()
         }
     }
 
@@ -55,4 +60,18 @@ internal class FragmentFactory(private val fragmentManager: FragmentManager) {
         }
     }
 
+    private fun realInstallFragment(fragment: Fragment): Boolean{
+        val transaction = fragmentManager.beginTransaction().add(fragment, TAG_FRAGMENT)
+        return try {
+            transaction.commitNowAllowingStateLoss()
+            true
+        } catch (e: IllegalStateException) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    @IntDef(value = [VERSION_AUTO, VERSION_V1, VERSION_V2])
+    @Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.FIELD, AnnotationTarget.PROPERTY_SETTER)
+    annotation class Version
 }

@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.util.SparseArray
 import androidx.annotation.RequiresApi
 import com.example.permission.base.AbsProxyFragment
 import com.example.permission.base.IPermissionResultsCallback
@@ -14,9 +13,11 @@ import com.example.permission.utils.*
 import com.example.permission.utils.LogUtil
 import com.example.permission.utils.PermissionUtil
 import com.example.permission.utils.SpecialUtil
+import kotlin.collections.ArrayList
+import com.example.permission.proxy.ProxyFragmentViewModel.*
 
 /**
- * 申请权限的代理Fragment
+ * 申请权限的代理Fragment, 具有生命周期感应，只在Fragment可见时才把结果回调，同时当配置更改销毁重建时也可以恢复状态
  * Created by 陈健宇 at 2019/3/25
  */
 internal class ProxyFragmentV1 : AbsProxyFragment() {
@@ -35,6 +36,25 @@ internal class ProxyFragmentV1 : AbsProxyFragment() {
     private val permissionResultCallbacks = viewModel.permissionResultCallbacks
     private val waitForCheckPermissions = viewModel.waitForCheckPermissions
     private val waitForCheckSpecialPermissions = viewModel.waitForCheckSpecialPermissions
+    private val requestNormalPermissionsResultLiveData = viewModel.requestNormalPermissionsResultLiveData
+    private val requestSpecialPermissionsResultLiveData = viewModel.requestSpecialPermissionsResultLiveData
+    private val checkPermissionsResultLiveData = viewModel.checkPermissionsResultLiveData
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        requestNormalPermissionsResultLiveData.observe(this) { result -> handlePermissionsResult(result.requestCode, result.permissions, result.grantResults) }
+        requestSpecialPermissionsResultLiveData.observe(this) { result ->
+            val requestCode = result.requestCode
+            val specialPermissions = waitForCheckSpecialPermissions[requestCode]
+            if(specialPermissions.hasNext()){
+                requestSpecialPermission(specialPermissions.nextPermission(), requestCode)
+            }else{
+                waitForCheckSpecialPermissions.remove(requestCode)
+                handlePermissionsResult(requestCode, result.permissions, result.grantResults)
+            }
+        }
+        checkPermissionsResultLiveData.observe(this) { result -> handlePermissionsResult(result.requestCode, result.permissions, result.grantResults)}
+    }
 
     override fun requestActivity(): Activity {
         return requireActivity()
@@ -96,65 +116,48 @@ internal class ProxyFragmentV1 : AbsProxyFragment() {
         return requestCode
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    override fun handlePermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: BooleanArray) {
         val callback = permissionResultCallbacks[requestCode]
         if (callback != null) {
             permissionResultCallbacks.remove(requestCode)
             val permissionResults = ArrayList<PermissionResult>(permissions.size)
             grantResults.forEachIndexed { index, grantResult ->
-                permissionResults[index] = PermissionResult(permissions[index], grantResult == PackageManager.PERMISSION_GRANTED)
+                permissionResults[index] = PermissionResult(permissions[index], grantResult)
             }
             callback.onPermissionResults(permissionResults)
-            LogUtil.d(TAG, "onRequestNormalPermissionsResult: requestCode = $requestCode, permissionResults = $permissionResults")
+            LogUtil.d(TAG, "handlePermissionsResult: requestCode = $requestCode, permissionResults = $permissionResults")
         }else{
-            LogUtil.d(TAG, "onRequestNormalPermissionsResult: permission result callback is empty, requestCode = $requestCode, permissions = $permissions")
+            LogUtil.d(TAG, "handlePermissionsResult: permission result callback is empty, requestCode = $requestCode, permissions = $permissions")
         }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        val grantedResult = BooleanArray(permissions.size)
+        grantResults.forEachIndexed { index, grantResult ->
+            grantedResult[index] = grantResult == PackageManager.PERMISSION_GRANTED
+        }
+        requestNormalPermissionsResultLiveData.value = PermissionsResult(requestCode, permissions, grantedResult)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        val permissions = waitForCheckPermissions[requestCode]
-        if(permissions != null){
+        if(waitForCheckSpecialPermissions.containKey(requestCode)){
+            val specialPermissions = waitForCheckSpecialPermissions[requestCode]
+            specialPermissions.setPriorGrantResult(PermissionUtil.checkSpecialPermission(host, specialPermissions.priorPermission()))
+            requestSpecialPermissionsResultLiveData.value = PermissionsResult(requestCode, specialPermissions.getPermissions(), specialPermissions.getGrantResults())
+        }else if(waitForCheckPermissions.containKey(requestCode)){
+            val permissions = waitForCheckPermissions[requestCode]
+            val grantResults = BooleanArray(permissions.size)
+            permissions.forEachIndexed { index, permission ->
+                grantResults[index] = if(PermissionUtil.isSpecialPermission(permission)){
+                    PermissionUtil.checkSpecialPermission(host, permission)
+                }else{
+                    PermissionUtil.checkNormalPermission(host, permission)
+                }
+            }
             waitForCheckPermissions.remove(requestCode)
-            val callback = permissionResultCallbacks[requestCode]
-            if(callback != null){
-                permissionResultCallbacks.remove(requestCode)
-                val permissionResults = ArrayList<PermissionResult>(permissions.size)
-                permissions.forEachIndexed { index, permission ->
-                    val permissionResult = if(PermissionUtil.isSpecialPermission(permission)){
-                        PermissionResult(permission, PermissionUtil.checkSpecialPermission(host, permission), special = true)
-                    }else{
-                        PermissionResult(permission, PermissionUtil.checkNormalPermission(host, permission))
-                    }
-                    permissionResults[index] = permissionResult
-                }
-                callback.onPermissionResults(permissionResults)
-                LogUtil.d(TAG, "onCheckPermissionsResult: requestCode = $requestCode, permissionResults = $permissionResults")
-            }else{
-                LogUtil.d(TAG, "onCheckPermissionsResult: permission result callback is empty, requestCode = $requestCode, permissions = $permissions")
-            }
-            return
-        }
-
-        val specialPermissions = waitForCheckSpecialPermissions[requestCode]
-        specialPermissions.setPriorGrantResult(PermissionUtil.checkSpecialPermission(host, specialPermissions.priorPermission()))
-        if(specialPermissions.hasNext()){
-            requestSpecialPermission(specialPermissions.nextPermission(), requestCode)
-        }else{
-            waitForCheckSpecialPermissions.remove(requestCode)
-            val callback = permissionResultCallbacks[requestCode]
-            if (callback != null) {
-                permissionResultCallbacks.remove(requestCode)
-                val permissionResults = ArrayList<PermissionResult>(specialPermissions.size())
-                specialPermissions.getGrantResults().forEachIndexed { index, granted ->
-                    permissionResults[index] = PermissionResult(specialPermissions.get(index), granted, special = true)
-                }
-                callback.onPermissionResults(permissionResults)
-                LogUtil.d(TAG, "onRequestSpecialPermissionsResult: requestCode = $requestCode, permissionResults = $permissionResults")
-            }else{
-                LogUtil.d(TAG, "onRequestSpecialPermissionsResult: permission result callback is empty, requestCode = $requestCode, permissions = ${specialPermissions.getPermissions()}")
-            }
+            checkPermissionsResultLiveData.value = PermissionsResult(requestCode, permissions, grantResults)
         }
     }
 

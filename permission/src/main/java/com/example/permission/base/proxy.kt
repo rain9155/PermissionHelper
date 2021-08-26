@@ -66,6 +66,8 @@ internal abstract class AbsProxyFragment : Fragment(), IProxyFragment {
 
     protected abstract fun generateRequestCode(): Int
 
+    protected abstract fun handlePermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: BooleanArray)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         LogUtil.d(TAG, "onCreate")

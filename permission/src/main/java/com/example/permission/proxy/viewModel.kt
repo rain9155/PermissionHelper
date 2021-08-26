@@ -5,10 +5,7 @@ import android.util.SparseArray
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStore
-import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.*
 import com.example.permission.base.IPermissionResultsCallback
 import com.example.permission.utils.forEach
 import java.lang.reflect.Constructor
@@ -38,9 +35,13 @@ fun <T : ViewModel> getViewModel(viewModelStoreOwner: ViewModelStoreOwner, viewM
 }
 
 /**
- * [ProxyFragmentV1]的ViewModel
+ * 代理Fragment的ViewModel公共实现
  */
-internal class ProxyFragmentV1ViewModel : ViewModel() {
+internal open class ProxyFragmentViewModel : ViewModel() {
+
+    val requestNormalPermissionsResultLiveData = MutableLiveData<PermissionsResult>()
+    val requestSpecialPermissionsResultLiveData = MutableLiveData<PermissionsResult>()
+    val checkPermissionsResultLiveData = MutableLiveData<PermissionsResult>()
 
     val permissionResultCallbacks = SparseArray<IPermissionResultsCallback>()
     val waitForCheckPermissions = SparseArray<Array<String>>()
@@ -52,28 +53,29 @@ internal class ProxyFragmentV1ViewModel : ViewModel() {
         waitForCheckPermissions.clear()
         waitForCheckSpecialPermissions.clear()
     }
+
+    class PermissionsResult(val requestCode: Int, val permissions: Array<String>, val grantResults: BooleanArray)
 }
+
+/**
+ * [ProxyFragmentV1]的ViewModel
+ */
+internal class ProxyFragmentV1ViewModel : ProxyFragmentViewModel()
 
 /**
  * [ProxyFragmentV2]的ViewModel
  */
-internal class ProxyFragmentV2ViewModel : ViewModel() {
+internal class ProxyFragmentV2ViewModel : ProxyFragmentViewModel() {
 
     val requestNormalPermissionsLaunchedKeys = ArrayList<Int>()
     val requestSpecialPermissionsLaunchedKeys = ArrayList<Int>()
     val checkPermissionsLaunchedKeys = ArrayList<Int>()
-    val permissionResultCallbacks = SparseArray<IPermissionResultsCallback>()
-    val waitForCheckPermissions = SparseArray<Array<String>>()
-    val waitForCheckSpecialPermissions = SparseArray<SpecialArray>()
 
     override fun onCleared() {
         super.onCleared()
         requestNormalPermissionsLaunchedKeys.clear()
         requestSpecialPermissionsLaunchedKeys.clear()
         checkPermissionsLaunchedKeys.clear()
-        permissionResultCallbacks.clear()
-        waitForCheckPermissions.clear()
-        waitForCheckSpecialPermissions.clear()
     }
 
 }
