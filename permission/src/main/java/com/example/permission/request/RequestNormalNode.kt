@@ -1,11 +1,14 @@
 package com.example.permission.request
 
+import com.example.permission.base.*
 import com.example.permission.base.IChain
 import com.example.permission.base.INode
 import com.example.permission.base.IPermissionResultsCallback
 import com.example.permission.base.PermissionResult
+import com.example.permission.base.REASON_REQUEST_CALLBACK
 import com.example.permission.utils.LogUtil
 import com.example.permission.utils.PermissionUtil
+import com.example.permission.utils.SpecialUtil
 
 /**
  * 权限请求，请求除特殊权限以外的权限
@@ -20,16 +23,20 @@ internal class RequestNormalNode : INode {
     override fun handle(chain: IChain) {
         val request = chain.getRequest()
 
-        LogUtil.d(TAG, "pre handle: request = $request")
+        LogUtil.d(TAG, "handle: request = $request")
 
         val normalPermissions = ArrayList<String>()
         request.requestPermissions.forEach {permission ->
-            if(!PermissionUtil.isSpecialPermission(permission)){
+            if(!SpecialUtil.isSpecialPermission(permission)){
                 normalPermissions.add(permission)
             }
         }
 
-        request.proxyFragment.requestNormalPermissions(normalPermissions, object : IPermissionResultsCallback {
+        request.dispatchRequestStep { callback ->
+            callback.onRequestPermissions(normalPermissions)
+        }
+
+        request.getProxyFragment().requestNormalPermissions(normalPermissions, object : IPermissionResultsCallback {
             override fun onPermissionResults(permissionResults: List<PermissionResult>) {
                 permissionResults.forEach {result ->
                     if(result.granted){
@@ -42,8 +49,6 @@ internal class RequestNormalNode : INode {
                 chain.process(request)
             }
         })
-
-        LogUtil.d(TAG, "post handle: request = $request")
     }
 
 }

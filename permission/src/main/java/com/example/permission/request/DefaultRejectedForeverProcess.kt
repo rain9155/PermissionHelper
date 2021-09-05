@@ -4,7 +4,9 @@ import com.example.permission.IRejectedForeverCallback
 import com.example.permission.base.IChain
 import com.example.permission.base.IPermissionResultsCallback
 import com.example.permission.base.PermissionResult
+import com.example.permission.base.REASON_REJECTED_FOREVER_CALLBACK
 import com.example.permission.utils.LogUtil
+import com.example.permission.utils.PermissionUtil
 
 /**
  * [IRejectedForeverCallback.IRejectedForeverProcess]的默认实现
@@ -19,12 +21,38 @@ internal class DefaultRejectedForeverProcess(private val chain: IChain) : IRejec
     override fun gotoSettings() {
         LogUtil.d(TAG, "gotoSettings")
         val request = chain.getRequest()
-        request.proxyFragment.gotoSettingsForCheckResults(request.rejectedForeverPermissions, object : IPermissionResultsCallback{
+        val permissions = ArrayList<String>(request.grantedPermissions.size + request.rejectedPermissions.size + request.rejectedForeverPermissions.size).apply {
+            addAll(request.getClonedGrantedPermissions())
+            addAll(request.getClonedRejectedPermissions())
+            addAll(request.getClonedRejectedForeverPermissions())
+        }
+        request.dispatchRequestStep { callback ->
+            callback.onRequestResume(REASON_REJECTED_FOREVER_CALLBACK)
+        }
+        request.getProxyFragment().gotoSettingsForCheckResults(permissions, object : IPermissionResultsCallback{
             override fun onPermissionResults(permissionResults: List<PermissionResult>) {
                 permissionResults.forEach {result ->
-                    if(result.granted){
-                        request.grantedPermissions.add(result.name)
-                        request.rejectedForeverPermissions.remove(result.name)
+                    val granted = result.granted
+                    val permission = result.name
+                    if(request.rejectedForeverPermissions.contains(permission)){
+                        if(granted){
+                            request.rejectedForeverPermissions.remove(permission)
+                            request.grantedPermissions.add(permission)
+                        }
+                    }else if(request.rejectedPermissions.contains(permission)){
+                        if(granted){
+                            request.rejectedPermissions.remove(permission)
+                            request.grantedPermissions.add(permission)
+                        }
+                    }else{
+                        if(!granted){
+                            request.grantedPermissions.remove(permission)
+                            if(PermissionUtil.checkShouldShowRationale(request.getActivity(), permission)){
+                                request.rejectedPermissions.add(permission)
+                            }else{
+                                request.rejectedForeverPermissions.add(permission)
+                            }
+                        }
                     }
                 }
                 chain.process(request)

@@ -1,7 +1,5 @@
 package com.example.permission
 
-import com.example.permission.base.IProcess
-
 /**
  * 权限开始申请时的回调
  * Created by 陈健宇 at 2021/8/12

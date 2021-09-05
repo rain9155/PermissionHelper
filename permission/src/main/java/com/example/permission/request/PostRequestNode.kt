@@ -3,6 +3,8 @@ package com.example.permission.request
 import android.app.Activity
 import com.example.permission.base.IChain
 import com.example.permission.base.INode
+import com.example.permission.base.REASON_REJECTED_CALLBACK
+import com.example.permission.base.REASON_REJECTED_FOREVER_CALLBACK
 import com.example.permission.utils.LogUtil
 import com.example.permission.utils.PermissionUtil
 import java.util.LinkedHashSet
@@ -14,51 +16,52 @@ import java.util.LinkedHashSet
 internal class PostRequestNode : INode {
 
     companion object{
-        private const val TAG = "RequestSpecialNode"
+        private const val TAG = "PostRequestNode"
     }
 
     override fun handle(chain: IChain) {
         val request = chain.getRequest()
-
-        LogUtil.d(TAG, "pre handle: request = $request")
 
         if(request.requestPermissions.isNotEmpty()){
             request.rejectedPermissions.addAll(request.requestPermissions)
             request.requestPermissions.clear()
         }
 
-        val rejectedPermissions = request.rejectedPermissions
+        val rejectedPermissions = request.getClonedRejectedPermissions()
         rejectedPermissions.forEach { permission ->
-            if(!isShouldRationale(request.activity, permission)){
-                request.rejectedForeverPermissions.add(permission)
+            if(!PermissionUtil.checkShouldShowRationale(request.getActivity(), permission)){
                 request.rejectedPermissions.remove(permission)
+                request.rejectedForeverPermissions.add(permission)
             }
         }
 
+        LogUtil.d(TAG, "handle: request = $request")
+
         if(request.rejectedCallback != null && request.rejectedPermissions.isNotEmpty()){
+            request.dispatchRequestStep { callback ->
+                callback.onRequestPause(REASON_REJECTED_CALLBACK)
+            }
             request.rejectedCallback!!.onRejected(
                 DefaultRejectedProcess(chain),
-                request.rejectedPermissions
+                request.getClonedRejectedPermissions()
             )
             request.rejectedCallback = null
             return
         }
 
         if(request.rejectedForeverCallback != null && request.rejectedForeverPermissions.isNotEmpty()){
+            request.dispatchRequestStep { callback ->
+                callback.onRequestPause(REASON_REJECTED_FOREVER_CALLBACK)
+            }
             request.rejectedForeverCallback!!.onRejectedForever(
                 DefaultRejectedForeverProcess(chain),
-                request.rejectedForeverPermissions
+                request.getClonedRejectedForeverPermissions()
             )
             request.rejectedForeverCallback = null
             return
         }
 
         chain.process(request)
-
-        LogUtil.d(TAG, "post handle: request = $request")
     }
 
-    private fun isShouldRationale(activity: Activity, permission: String): Boolean{
-        return PermissionUtil.isSpecialPermission(permission) || PermissionUtil.checkShouldShowRationale(activity, permission)
-    }
 }

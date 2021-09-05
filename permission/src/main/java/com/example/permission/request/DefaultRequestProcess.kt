@@ -2,6 +2,7 @@ package com.example.permission.request
 
 import com.example.permission.IRequestCallback
 import com.example.permission.base.IChain
+import com.example.permission.base.REASON_REQUEST_CALLBACK
 import com.example.permission.utils.LogUtil
 
 /**
@@ -16,7 +17,11 @@ internal class DefaultRequestProcess(private val chain: IChain) : IRequestCallba
 
     override fun requestContinue() {
         LogUtil.d(TAG, "requestContinue")
-        chain.process(chain.getRequest())
+        val request = chain.getRequest()
+        request.dispatchRequestStep { callback ->
+            callback.onRequestResume(REASON_REQUEST_CALLBACK)
+        }
+        chain.process(request)
     }
 
     override fun requestTermination() {

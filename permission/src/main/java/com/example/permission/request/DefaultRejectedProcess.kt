@@ -3,6 +3,7 @@ package com.example.permission.request
 import com.example.permission.IRejectedCallback
 import com.example.permission.IRequestCallback
 import com.example.permission.base.IChain
+import com.example.permission.base.REASON_REJECTED_CALLBACK
 import com.example.permission.utils.LogUtil
 
 /**
@@ -18,13 +19,16 @@ internal class DefaultRejectedProcess(private val chain: IChain) : IRejectedCall
     override fun requestAgain(permissions: List<String>) {
         LogUtil.d(TAG, "requestAgain: permissions = $permissions")
         val request = chain.getRequest()
-        val rejectedPermissions = request.rejectedPermissions
+        val rejectedPermissions = request.getClonedRejectedPermissions()
         rejectedPermissions.forEach { permission ->
             if(permissions.contains(permission)){
                 request.rejectedPermissions.remove(permission)
             }
         }
         request.requestPermissions = permissions.toMutableList()
+        request.dispatchRequestStep { callback ->
+            callback.onRequestResume(REASON_REJECTED_CALLBACK)
+        }
         chain.process(request, restart = true)
     }
 

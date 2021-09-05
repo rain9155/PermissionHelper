@@ -42,12 +42,7 @@ internal object PermissionUtil {
         val grantedPermissions = ArrayList<String>()
         val rejectedPermissions = ArrayList<String>()
         for(permission in permissions){
-            val isGranted = if(!isSpecialPermission(permission)){
-                checkNormalPermission(context, permission)
-            }else{
-                checkSpecialPermission(context, permission)
-            }
-            if(isGranted){
+            if(checkPermission(context, permission)){
                 grantedPermissions.add(permission)
             }else{
                 rejectedPermissions.add(permission)
@@ -59,29 +54,19 @@ internal object PermissionUtil {
     /**
      * 检查权限是否被授予
      */
-    fun checkNormalPermission(context: Context, permission: String): Boolean{
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
-    }
-
-    /**
-     * 检查特殊权限是否被授予
-     */
-    fun checkSpecialPermission(context: Context, permission: String): Boolean{
-        return SpecialUtil.checkPermission(context, permission)
-    }
-
-    /**
-     * 判断permission是否是特殊权限
-     */
-    fun isSpecialPermission(permission: String): Boolean{
-        return SpecialUtil.getPermissions().contains(permission)
+    fun checkPermission(context: Context, permission: String): Boolean{
+        return if(!SpecialUtil.isSpecialPermission(permission)){
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.M || ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+        }else{
+            SpecialUtil.checkPermission(context, permission)
+        }
     }
 
     /**
      * 判断是否需要向用户显示显示UI解释权限申请原因
      */
     fun checkShouldShowRationale(activity: Activity, permission: String): Boolean{
-        return ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+        return SpecialUtil.isSpecialPermission(permission) || ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
     }
 
     /**

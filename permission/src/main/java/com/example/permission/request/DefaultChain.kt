@@ -36,6 +36,7 @@ internal class DefaultChain constructor(
                 index
             }
         }
+        request.isRestart = restart
         val node = nodes[finalIndex]
         node.handle(DefaultChain(
             request,

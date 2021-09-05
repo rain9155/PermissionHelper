@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -27,37 +28,44 @@ internal object SpecialUtil {
     )
 
     /**
-     * 返回PermissionHelper支持的特殊权限
+     * 判断是否是特殊权限
      */
-    fun getPermissions(): List<String>{
-        return specialPermissions
+    fun isSpecialPermission(permission: String): Boolean{
+        return specialPermissions.contains(permission)
     }
 
     /**
      * 返回特殊权限对应的Settings设置界面的Intent
      */
-    @SuppressLint("InlinedApi")
+    @SuppressLint("InlinedApi", "QueryPermissionsNeeded")
     fun getIntent(context: Context, permission: String): Intent{
-        return when(permission){
+        val action = when(permission){
             Manifest.permission.WRITE_SETTINGS -> {
-                Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:${context.packageName}"))
+                Settings.ACTION_MANAGE_WRITE_SETTINGS
             }
             Manifest.permission.SYSTEM_ALERT_WINDOW -> {
-                Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION
             }
             Manifest.permission.REQUEST_INSTALL_PACKAGES -> {
-                Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}"))
+                Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES
             }
             Manifest.permission.PACKAGE_USAGE_STATS -> {
-                Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS, Uri.parse("package:${context.packageName}"))
+                Settings.ACTION_USAGE_ACCESS_SETTINGS
             }
             Manifest.permission.MANAGE_EXTERNAL_STORAGE -> {
-                Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:${context.packageName}"))
+                Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION
             }
             else ->{
                 LogUtil.d(TAG, "getIntent: unknown special permission, permission = $permission")
-                Intent()
+                SettingsUtil.getAppDetailIntent(context).action
             }
+        }
+        val intent = Intent(action, Uri.parse("package:${context.packageName}"))
+        if(intent.resolveActivityInfo(context.packageManager, PackageManager.MATCH_DEFAULT_ONLY) != null){
+            return intent
+        }
+        return intent.apply {
+            data = null
         }
     }
 

@@ -1,4 +1,4 @@
-package com.example.permission.base
+package com.example.permission
 
 /**
  * 申请流程控制

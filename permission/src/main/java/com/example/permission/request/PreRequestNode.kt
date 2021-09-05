@@ -2,6 +2,7 @@ package com.example.permission.request
 
 import com.example.permission.base.IChain
 import com.example.permission.base.INode
+import com.example.permission.base.REASON_REQUEST_CALLBACK
 import com.example.permission.utils.LogUtil
 import com.example.permission.utils.PermissionUtil
 
@@ -18,23 +19,31 @@ internal class PreRequestNode : INode {
     override fun handle(chain: IChain) {
         val request = chain.getRequest()
 
-        LogUtil.d(TAG, "pre handle: request = $request")
+        request.dispatchRequestStep { callback ->
+            if(request.isRestart){
+                return@dispatchRequestStep
+            }
+            callback.onRequestStart()
+        }
 
-        val result = PermissionUtil.checkPermissions(request.activity, request.requestPermissions)
+        val result = PermissionUtil.checkPermissions(request.getActivity(), request.getClonedRequestPermissions())
         request.requestPermissions = result.first
         request.grantedPermissions.addAll(result.second)
 
+        LogUtil.d(TAG, "handle: request = $request")
+
         if(request.requestCallback != null && request.requestPermissions.isNotEmpty()){
+            request.dispatchRequestStep { callback ->
+                callback.onRequestPause(REASON_REQUEST_CALLBACK)
+            }
             request.requestCallback!!.onRequest(
                 DefaultRequestProcess(chain),
-                request.requestPermissions
+                request.getClonedRequestPermissions()
             )
             request.requestCallback = null
         }else{
             chain.process(request)
         }
-
-        LogUtil.d(TAG, "post handle: request = $request")
     }
 
 }

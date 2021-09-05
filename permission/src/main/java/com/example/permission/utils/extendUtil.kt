@@ -7,14 +7,14 @@ import android.util.SparseArray
  * Created by 陈健宇 at 2021/8/25
  */
 
-inline fun <T> SparseArray<T>.forEach(action: (T) -> Unit){
+internal inline fun <T> SparseArray<T>.forEach(action: (T) -> Unit){
     var index = 0
     while (index < size()){
         action.invoke(valueAt(index++))
     }
 }
 
-inline fun <T> SparseArray<T>.forEachWithIndex(action: (Int, T) -> Unit){
+internal inline fun <T> SparseArray<T>.forEachWithIndex(action: (Int, T) -> Unit){
     var index = 0
     while (index < size()){
         action.invoke(index, valueAt(index))
@@ -22,14 +22,46 @@ inline fun <T> SparseArray<T>.forEachWithIndex(action: (Int, T) -> Unit){
     }
 }
 
-fun <T> SparseArray<T>.isNotEmpty(): Boolean{
+internal fun <T> SparseArray<T>.isNotEmpty(): Boolean{
     return size() > 0
 }
 
-fun <T> SparseArray<T>?.isEmpty(): Boolean{
+internal fun <T> SparseArray<T>?.isEmpty(): Boolean{
     return this == null || !isNotEmpty()
 }
 
-fun <T> SparseArray<T>.containKey(key: Int): Boolean{
+internal fun <T> SparseArray<T>.containKey(key: Int): Boolean{
     return indexOfKey(key) >= 0
+}
+
+internal fun <T> Array<T>.toStrings(): String{
+    if(isEmpty()){
+        return "[]"
+    }
+    val sb = StringBuilder()
+    sb.append('[')
+    forEachIndexed { index, elememt ->
+        sb.append(elememt)
+        if(index != size - 1){
+            sb.append(", ")
+        }
+    }
+    sb.append("]")
+    return sb.toString()
+}
+
+internal fun BooleanArray.toStrings(): String{
+    if(isEmpty()){
+        return "[]"
+    }
+    val sb = StringBuilder()
+    sb.append('[')
+    forEachIndexed { index, elememt ->
+        sb.append(elememt)
+        if(index != size - 1){
+            sb.append(", ")
+        }
+    }
+    sb.append("]")
+    return sb.toString()
 }

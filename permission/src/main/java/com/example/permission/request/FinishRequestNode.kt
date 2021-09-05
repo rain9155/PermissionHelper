@@ -17,15 +17,20 @@ internal class FinishRequestNode : INode {
     override fun handle(chain: IChain) {
         val request = chain.getRequest()
 
-        LogUtil.d(TAG, "pre handle: request = $request")
+        request.dispatchRequestStep { callback ->
+            callback.onRequestFinish()
+        }
+        request.clearRequestStepCallback()
 
         if(request.requestPermissions.isNotEmpty()){
             request.rejectedPermissions.addAll(request.requestPermissions)
             request.requestPermissions.clear()
         }
 
+        LogUtil.d(TAG, "handle: request = $request")
+
         if(request.resultCallback != null){
-            val grantedPermissions = request.grantedPermissions
+            val grantedPermissions = request.getClonedGrantedPermissions()
             val rejectedPermissions = ArrayList<String>(request.rejectedPermissions.size + request.rejectedForeverPermissions.size).apply {
                 addAll(request.rejectedPermissions)
                 addAll(request.rejectedForeverPermissions)
@@ -37,7 +42,5 @@ internal class FinishRequestNode : INode {
             )
             request.resultCallback = null
         }
-
-        LogUtil.d(TAG, "post handle: request = $request")
     }
 }

@@ -15,7 +15,7 @@ import java.util.*
  * 获取各厂商的权限界面工具类
  * Created by 陈健宇 at 2019/6/3
  */
-object SettingsUtil {
+internal object SettingsUtil {
 
     /**
      * 获取不同厂商的权限设置界面的intent，不满足条件时返回应用详情界面的intent
@@ -45,9 +45,7 @@ object SettingsUtil {
      * 获取应用详情界面的intent
      */
     fun getAppDetailIntent(context: Context): Intent{
-        return Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + context.packageName)).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
+        return Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + context.packageName))
     }
 
     /**
@@ -56,7 +54,6 @@ object SettingsUtil {
     fun getHUAWEIIntent(): Intent{
         return Intent().apply {
             ComponentName("com.huawei.systemmanager", "com.huawei.permissionmanager.ui.MainActivity")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
     }
 
@@ -70,7 +67,6 @@ object SettingsUtil {
         val intent = Intent("miui.intent.action.APP_PERM_EDITOR").apply {
             putExtra("extra_pkgname", context.packageName)
             component = ComponentName("com.miui.securitycenter", "com.miui.permcenter.permissions.PermissionsEditorActivity")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
         return if(intent.resolveActivityInfo(context.packageManager, PackageManager.MATCH_DEFAULT_ONLY) != null){
             intent
@@ -79,7 +75,6 @@ object SettingsUtil {
             Intent("miui.intent.action.APP_PERM_EDITOR").apply {
                 putExtra("extra_pkgname", context.packageName)
                 component = ComponentName("com.miui.securitycenter", "com.miui.permcenter.permissions.AppPermissionsEditorActivity")
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
         }
     }
@@ -91,7 +86,6 @@ object SettingsUtil {
        return Intent("com.meizu.safe.security.SHOW_APPSEC").apply {
            putExtra("packageName", context.packageName)
            addCategory(Intent.CATEGORY_DEFAULT)
-           flags = Intent.FLAG_ACTIVITY_NEW_TASK
        }
     }
 
@@ -101,7 +95,6 @@ object SettingsUtil {
     fun getOPPOIntent(): Intent{
         return Intent().apply {
             component = ComponentName("com.coloros.safecenter", "com.coloros.safecenter.permission.PermissionManagerActivity")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
     }
 

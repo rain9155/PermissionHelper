@@ -1,15 +1,10 @@
 package com.example.permission.proxy
 
-import android.content.Intent
 import android.util.SparseArray
-import androidx.activity.result.ActivityResult
-import androidx.activity.result.ActivityResultCallback
-import androidx.activity.result.ActivityResultLauncher
 import androidx.lifecycle.*
 import com.example.permission.base.IPermissionResultsCallback
-import com.example.permission.utils.forEach
+import com.example.permission.base.IProxyFragmentUpdateCallback
 import java.lang.reflect.Constructor
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 代理fragment的ViewModel
@@ -19,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * 从[ViewModelProvider]中获取viewModel
  */
-fun <T : ViewModel> getViewModel(viewModelStoreOwner: ViewModelStoreOwner, viewModelClazz: Class<T>): T{
+internal fun <T : ViewModel> getViewModel(viewModelStoreOwner: ViewModelStoreOwner, viewModelClazz: Class<T>): T{
     val viewModelProviderClazz: Class<ViewModelProvider> = Class.forName(ViewModelProvider::class.java.name) as Class<ViewModelProvider>
     var oneParamConstructor: Constructor<ViewModelProvider>? = null
     try {
@@ -47,14 +42,17 @@ internal open class ProxyFragmentViewModel : ViewModel() {
     val waitForCheckPermissions = SparseArray<Array<String>>()
     val waitForCheckSpecialPermissions = SparseArray<SpecialArray>()
 
+    val proxyFragmentUpdateCallbacks = ArrayList<IProxyFragmentUpdateCallback>()
+
     override fun onCleared() {
         super.onCleared()
         permissionResultCallbacks.clear()
         waitForCheckPermissions.clear()
         waitForCheckSpecialPermissions.clear()
+        proxyFragmentUpdateCallbacks.clear()
     }
 
-    class PermissionsResult(val requestCode: Int, val permissions: Array<String>, val grantResults: BooleanArray)
+    internal class PermissionsResult(val requestCode: Int, val permissions: Array<String>, val grantResults: BooleanArray)
 }
 
 /**

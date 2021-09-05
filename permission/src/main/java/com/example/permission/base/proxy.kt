@@ -1,15 +1,8 @@
 package com.example.permission.base
 
-import android.app.Activity
-import android.content.Context
-import android.os.Bundle
-import android.util.Log
-import android.util.SparseArray
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import com.example.permission.proxy.ProxyFragmentV1
-import com.example.permission.utils.LogUtil
-import com.example.permission.utils.PermissionUtil
+import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.Lifecycle
 
 /**
  * 内部统一权限回调处理、接口定义
@@ -31,15 +24,31 @@ internal data class PermissionResult(
 internal interface IPermissionResultsCallback {
 
     fun onPermissionResults(permissionResults: List<PermissionResult>)
+}
+
+/**
+ * 代理fragment销毁重建后的实例更新通知回调
+ */
+internal interface IProxyFragmentUpdateCallback {
+
+    fun onProxyFragmentUpdate(proxyFragment: IProxyFragment)
 
 }
+
+
 
 /**
  * 申请权限的代理Fragment的公共接口
  */
 internal interface IProxyFragment {
 
-    fun requestActivity(): Activity
+    fun requestActivity(): FragmentActivity
+
+    fun requestFragmentManager(): FragmentManager
+
+    fun obtainLifecycle(): Lifecycle
+
+    fun obtainFragmentUpdateCallbackManager(): FragmentUpdateCallbackManager
 
     fun requestNormalPermissions(permissions: List<String>, callback: IPermissionResultsCallback)
 
@@ -47,54 +56,17 @@ internal interface IProxyFragment {
 
     fun gotoSettingsForCheckResults(permissions: List<String>, callback: IPermissionResultsCallback)
 
-}
+    /**
+     * IProxyFragmentUpdateCallback会保存在代理Fragment的ViewModel中，注意内存泄漏
+     */
+    interface FragmentUpdateCallbackManager{
 
-/**
- * 代理fragment的公共实现
- */
-internal abstract class AbsProxyFragment : Fragment(), IProxyFragment {
+        fun add(fragmentUpdateCallback: IProxyFragmentUpdateCallback): Boolean
 
-    companion object{
-        private const val TAG = "AbsProxyFragment"
+        fun remove(fragmentUpdateCallback: IProxyFragmentUpdateCallback): Boolean
+
+        fun contain(fragmentUpdateCallback: IProxyFragmentUpdateCallback): Boolean
+
     }
 
-    protected abstract fun requestNormalPermissions(permissions: Array<String>, callback: IPermissionResultsCallback)
-
-    protected abstract fun requestSpecialPermissions(permissions: Array<String>, callback: IPermissionResultsCallback)
-
-    protected abstract fun startSettingsForCheckResults(permissions: Array<String>, callback: IPermissionResultsCallback)
-
-    protected abstract fun generateRequestCode(): Int
-
-    protected abstract fun handlePermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: BooleanArray)
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        LogUtil.d(TAG, "onCreate")
-    }
-
-    override fun onStart() {
-        super.onStart()
-        LogUtil.d(TAG, "onStart")
-    }
-
-    override fun onResume() {
-        super.onResume()
-        LogUtil.d(TAG, "onResume")
-    }
-
-    override fun onPause() {
-        super.onPause()
-        LogUtil.d(TAG, "onPause")
-    }
-
-    override fun onStop() {
-        super.onStop()
-        LogUtil.d(TAG, "onStop")
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        LogUtil.d(TAG, "onDestroy")
-    }
 }

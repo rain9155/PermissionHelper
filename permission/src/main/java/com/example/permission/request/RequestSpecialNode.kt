@@ -6,6 +6,7 @@ import com.example.permission.base.IPermissionResultsCallback
 import com.example.permission.base.PermissionResult
 import com.example.permission.utils.LogUtil
 import com.example.permission.utils.PermissionUtil
+import com.example.permission.utils.SpecialUtil
 
 /**
  * 权限请求，请求特殊权限
@@ -20,16 +21,20 @@ internal class RequestSpecialNode : INode {
     override fun handle(chain: IChain) {
         val request = chain.getRequest()
 
-        LogUtil.d(TAG, "pre handle: request = $request")
+        LogUtil.d(TAG, "handle: request = $request")
 
         val specialPermissions = ArrayList<String>()
         request.requestPermissions.forEach {permission ->
-            if(PermissionUtil.isSpecialPermission(permission)){
+            if(SpecialUtil.isSpecialPermission(permission)){
                 specialPermissions.add(permission)
             }
         }
 
-        request.proxyFragment.requestSpecialPermissions(specialPermissions, object : IPermissionResultsCallback {
+        request.dispatchRequestStep { callback ->
+            callback.onRequestPermissions(specialPermissions)
+        }
+
+        request.getProxyFragment().requestSpecialPermissions(specialPermissions, object : IPermissionResultsCallback {
             override fun onPermissionResults(permissionResults: List<PermissionResult>) {
                 permissionResults.forEach {result ->
                     if(result.granted){
@@ -42,7 +47,5 @@ internal class RequestSpecialNode : INode {
                 chain.process(request)
             }
         })
-
-        LogUtil.d(TAG, "post handle: request = $request")
     }
 }
