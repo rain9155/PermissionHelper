@@ -13,18 +13,16 @@
         android:layout_centerInParent="true">
 
         <Button
-            android:id="@+id/btn_permission"
+            android:id="@+id/btn_request_permission"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/colorPrimary"
-            android:text="申请普通权限"/>
+            android:text="申请权限"/>
 
         <Button
-            android:id="@+id/btn_special_permission"
+            android:id="@+id/btn_request_permission_explain"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/colorAccent"
-            android:text="申请特殊权限"/>
+            android:text="申请权限，解释原因"/>
 
     </LinearLayout>
 

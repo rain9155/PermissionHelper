@@ -7,8 +7,8 @@ android {
         applicationId "com.example.permissionhelper"
         minSdkVersion 19
         targetSdkVersion 30
-        versionCode 2
-        versionName "2.0"
+        versionCode 3
+        versionName "3.0"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     buildTypes {
@@ -21,15 +21,18 @@ android {
         sourceCompatibility = '1.8'
         targetCompatibility = '1.8'
     }
+    viewBinding {
+        enabled = true
+    }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    //implementation project(':permission')
-    implementation 'io.github.rain9155:permissionhelper:1.0.2'
+    implementation project(':permission')
+    //implementation 'io.github.rain9155:permissionhelper:1.0.2'
 
-    implementation 'androidx.appcompat:appcompat:1.0.0'
+    implementation 'androidx.appcompat:appcompat:1.3.1'
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
