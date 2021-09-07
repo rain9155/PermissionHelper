@@ -1,15 +1,13 @@
 package com.example.permission.proxy
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.util.SparseArray
-import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.MutableLiveData
+import android.util.Log
 import com.example.permission.base.IPermissionResultsCallback
 import com.example.permission.base.PermissionResult
 import com.example.permission.utils.*
-import com.example.permission.utils.LogUtil
 import com.example.permission.utils.PermissionUtil
 import com.example.permission.utils.SpecialUtil
 import kotlin.collections.ArrayList
@@ -57,8 +55,21 @@ internal class ProxyFragmentV1 : AbsProxyFragment<ProxyFragmentV1ViewModel>() {
         return getViewModel(this, ProxyFragmentV1ViewModel::class.java)
     }
 
+    override fun handlePermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: BooleanArray) {
+        super.handlePermissionsResult(requestCode, permissions, grantResults)
+        val callback = permissionResultCallbacks[requestCode]
+        if (callback != null) {
+            permissionResultCallbacks.remove(requestCode)
+            val permissionResults = ArrayList<PermissionResult>(permissions.size)
+            grantResults.forEachIndexed { index, grantResult ->
+                permissionResults.add(PermissionResult(permissions[index], grantResult))
+            }
+            callback.onPermissionResults(permissionResults)
+        }
+    }
+
     override fun requestNormalPermissions(permissions: Array<String>, callback: IPermissionResultsCallback) {
-        LogUtil.d(TAG, "requestNormalPermissions: permissions = ${permissions.toStrings()}")
+        super.requestNormalPermissions(permissions, callback)
         if(permissions.isEmpty()){
             callback.onPermissionResults(emptyList())
             return
@@ -69,7 +80,7 @@ internal class ProxyFragmentV1 : AbsProxyFragment<ProxyFragmentV1ViewModel>() {
     }
 
     override fun requestSpecialPermissions(permissions: Array<String>, callback: IPermissionResultsCallback){
-        LogUtil.d(TAG, "requestSpecialPermissions: permissions = ${permissions.toStrings()}")
+        super.requestSpecialPermissions(permissions, callback)
         if(permissions.isEmpty()){
             callback.onPermissionResults(emptyList())
             return
@@ -81,7 +92,7 @@ internal class ProxyFragmentV1 : AbsProxyFragment<ProxyFragmentV1ViewModel>() {
     }
 
     override fun startSettingsForCheckResults(permissions: Array<String>, callback: IPermissionResultsCallback){
-        LogUtil.d(TAG, "startSettingsActivityForResults: permissions = ${permissions.toStrings()}")
+        super.startSettingsForCheckResults(permissions, callback)
         if(permissions.isEmpty()){
             callback.onPermissionResults(emptyList())
             return
@@ -89,7 +100,12 @@ internal class ProxyFragmentV1 : AbsProxyFragment<ProxyFragmentV1ViewModel>() {
         val requestCode = generateRequestCode()
         permissionResultCallbacks.put(requestCode, callback)
         waitForCheckPermissions.put(requestCode, permissions)
-        startActivityForResult(SettingsUtil.getIntent(host), requestCode)
+        try {
+            startActivityForResult(SettingsUtil.getIntent(host), requestCode)
+        }catch (e: ActivityNotFoundException){
+            LogUtil.e(TAG, "startSettingsForCheckResults: e = $e")
+            handleCheckPermissionsResult(requestCode)
+        }
     }
 
     override fun generateRequestCode(): Int{
@@ -100,24 +116,8 @@ internal class ProxyFragmentV1 : AbsProxyFragment<ProxyFragmentV1ViewModel>() {
         return requestCode
     }
 
-    override fun handlePermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: BooleanArray) {
-        val callback = permissionResultCallbacks[requestCode]
-        if (callback != null) {
-            LogUtil.d(TAG, "handlePermissionsResult: requestCode = $requestCode, permissions = ${permissions.toStrings()}, grantResults = ${grantResults.toStrings()}")
-            permissionResultCallbacks.remove(requestCode)
-            val permissionResults = ArrayList<PermissionResult>(permissions.size)
-            grantResults.forEachIndexed { index, grantResult ->
-                permissionResults.add(PermissionResult(permissions[index], grantResult))
-            }
-            callback.onPermissionResults(permissionResults)
-        }else{
-            LogUtil.d(TAG, "handlePermissionsResult: permission result callback is empty, requestCode = $requestCode, permissions = ${permissions.toStrings()}")
-        }
-    }
-
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        LogUtil.d(TAG, "onRequestPermissionsResult: requestCode = $requestCode, permissions = $permissions, grantResults = $grantResults")
         val grantedResult = BooleanArray(permissions.size)
         grantResults.forEachIndexed { index, grantResult ->
             grantedResult[index] = grantResult == PackageManager.PERMISSION_GRANTED
@@ -127,24 +127,35 @@ internal class ProxyFragmentV1 : AbsProxyFragment<ProxyFragmentV1ViewModel>() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        LogUtil.d(TAG, "onActivityResult: requestCode = $requestCode, data = $data")
         if(waitForCheckSpecialPermissions.containKey(requestCode)){
-            val specialPermissions = waitForCheckSpecialPermissions[requestCode]
-            specialPermissions.setPriorGrantResult(SpecialUtil.checkPermission(host, specialPermissions.priorPermission()))
-            requestSpecialPermissionsResultLiveData.value = PermissionsResult(requestCode, specialPermissions.getPermissions(), specialPermissions.getGrantResults())
+            handleRequestSpecialPermissionResult(requestCode)
         }else if(waitForCheckPermissions.containKey(requestCode)){
-            val permissions = waitForCheckPermissions[requestCode]
-            val grantResults = BooleanArray(permissions.size)
-            permissions.forEachIndexed { index, permission ->
-                grantResults[index] = PermissionUtil.checkPermission(host, permission)
-            }
-            waitForCheckPermissions.remove(requestCode)
-            checkPermissionsResultLiveData.value = PermissionsResult(requestCode, permissions, grantResults)
+            handleCheckPermissionsResult(requestCode)
         }
     }
 
     private fun requestSpecialPermission(permission: String, requestCode: Int){
-        startActivityForResult(SpecialUtil.getIntent(host, permission), requestCode)
+        try {
+            startActivityForResult(SpecialUtil.getIntent(host, permission), requestCode)
+        }catch (e: ActivityNotFoundException){
+            LogUtil.e(TAG, "requestSpecialPermission: e = $e")
+            handleRequestSpecialPermissionResult(requestCode)
+        }
     }
 
+    private fun handleRequestSpecialPermissionResult(requestCode: Int) {
+        val specialPermissions = waitForCheckSpecialPermissions[requestCode]
+        specialPermissions.setPriorGrantResult(SpecialUtil.checkPermission(host, specialPermissions.priorPermission()))
+        requestSpecialPermissionsResultLiveData.value = PermissionsResult(requestCode, specialPermissions.getPermissions(), specialPermissions.getGrantResults())
+    }
+
+    private fun handleCheckPermissionsResult(requestCode: Int) {
+        val permissions = waitForCheckPermissions[requestCode]
+        val grantResults = BooleanArray(permissions.size)
+        permissions.forEachIndexed { index, permission ->
+            grantResults[index] = PermissionUtil.checkPermission(host, permission)
+        }
+        waitForCheckPermissions.remove(requestCode)
+        checkPermissionsResultLiveData.value = PermissionsResult(requestCode, permissions, grantResults)
+    }
 }

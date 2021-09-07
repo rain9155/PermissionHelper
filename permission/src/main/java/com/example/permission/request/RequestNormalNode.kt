@@ -1,5 +1,7 @@
 package com.example.permission.request
 
+import android.Manifest
+import android.text.TextUtils
 import com.example.permission.base.*
 import com.example.permission.base.IChain
 import com.example.permission.base.INode
@@ -20,6 +22,8 @@ internal class RequestNormalNode : INode {
         private const val TAG = "RequestNormalNode"
     }
 
+    private var backgroundLocationPermission: String? = null
+
     override fun handle(chain: IChain) {
         val request = chain.getRequest()
 
@@ -31,6 +35,25 @@ internal class RequestNormalNode : INode {
                 normalPermissions.add(permission)
             }
         }
+
+        if(TextUtils.isEmpty(backgroundLocationPermission)){
+            backgroundLocationPermission = normalPermissions.find { permission ->
+                Manifest.permission.ACCESS_BACKGROUND_LOCATION == permission
+            }
+        }
+        normalPermissions.remove(backgroundLocationPermission)
+
+        if(normalPermissions.isNotEmpty()){
+            requestNormalPermissions(chain, request, normalPermissions)
+        }else if(!TextUtils.isEmpty(backgroundLocationPermission)){
+            requestNormalPermissions(chain, request, listOf(backgroundLocationPermission!!))
+            backgroundLocationPermission = null
+        }else{
+            chain.process(request)
+        }
+    }
+
+    fun requestNormalPermissions(chain: IChain, request: Request, normalPermissions: List<String>){
 
         request.dispatchRequestStep { callback ->
             callback.onRequestPermissions(normalPermissions)
@@ -46,7 +69,11 @@ internal class RequestNormalNode : INode {
                     }
                     request.requestPermissions.remove(result.name)
                 }
-                chain.process(request)
+                if(!TextUtils.isEmpty(backgroundLocationPermission)){
+                    chain.process(request, again = true)
+                }else{
+                    chain.process(request)
+                }
             }
         })
     }

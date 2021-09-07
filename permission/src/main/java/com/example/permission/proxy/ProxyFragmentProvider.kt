@@ -135,7 +135,7 @@ internal class ProxyFragmentProvider : IRequestStepCallback.Impl{
             Class.forName("androidx.activity.result.ActivityResultRegistry")
             true
         }catch (e: ClassNotFoundException){
-            e.printStackTrace()
+            LogUtil.e(TAG, "tryFindActivityResultRegistry: e = $e")
             false
         }
     }
@@ -146,7 +146,7 @@ internal class ProxyFragmentProvider : IRequestStepCallback.Impl{
         try {
             transaction.commitNow()
         } catch (e: Exception) {
-            e.printStackTrace()
+            LogUtil.e(TAG, "installFragment: e = $e")
             throw InstantiationException("$fragment install fail")
         }
     }

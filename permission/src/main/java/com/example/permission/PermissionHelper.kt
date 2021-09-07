@@ -58,6 +58,7 @@ class PermissionHelper private constructor(private val proxyFragmentProvider: Pr
          * @param requestCode 请求码，如果传递了，须自己在activity中重写[Activity.onActivityResult]
          */
         @JvmStatic
+        @JvmOverloads
         fun gotoSettings(activity: Activity, requestCode: Int = 0x9155){
             activity.startActivityForResult(SettingsUtil.getIntent(activity), requestCode)
         }

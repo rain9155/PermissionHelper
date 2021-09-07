@@ -4,12 +4,15 @@ import android.util.SparseArray
 import androidx.lifecycle.*
 import com.example.permission.base.IPermissionResultsCallback
 import com.example.permission.base.IProxyFragmentUpdateCallback
+import com.example.permission.utils.LogUtil
 import java.lang.reflect.Constructor
 
 /**
  * 代理fragment的ViewModel
  * Created by 陈健宇 at 2021/8/25
  */
+
+const val TAG = "ViewModel"
 
 /**
  * 从[ViewModelProvider]中获取viewModel
@@ -20,7 +23,7 @@ internal fun <T : ViewModel> getViewModel(viewModelStoreOwner: ViewModelStoreOwn
     try {
         oneParamConstructor = viewModelProviderClazz.getConstructor(ViewModelStoreOwner::class.java)
     }catch (e: Exception){
-        e.printStackTrace()
+        LogUtil.e(TAG, "getViewModel: e = $e")
     }
     if(oneParamConstructor != null){
         return oneParamConstructor.newInstance(viewModelStoreOwner).get(viewModelClazz)

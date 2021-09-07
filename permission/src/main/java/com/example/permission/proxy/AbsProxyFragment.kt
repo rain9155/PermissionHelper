@@ -1,9 +1,11 @@
 package com.example.permission.proxy
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.util.SparseArray
+import androidx.annotation.CallSuper
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
@@ -13,6 +15,7 @@ import com.example.permission.base.IProxyFragment
 import com.example.permission.base.IProxyFragmentUpdateCallback
 import com.example.permission.proxy.ProxyFragmentViewModel.PermissionsResult
 import com.example.permission.utils.LogUtil
+import com.example.permission.utils.toStrings
 import java.lang.reflect.Method
 
 /**
@@ -63,14 +66,9 @@ internal abstract class AbsProxyFragment<T : ProxyFragmentViewModel> : Fragment(
         }
     }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        Log.d(TAG, "onAttach: isAdded = $isAdded")
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        LogUtil.d(TAG, "onCreate")
+        LogUtil.d(TAG, "onCreate, savedState = $savedInstanceState")
         host = requestActivity()
         viewModel = createViewModel().apply {
             this@AbsProxyFragment.permissionResultCallbacks = permissionResultCallbacks
@@ -110,6 +108,7 @@ internal abstract class AbsProxyFragment<T : ProxyFragmentViewModel> : Fragment(
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         LogUtil.d(TAG, "onSaveInstanceState")
+        outState.putString("testKey", "testValue")
     }
 
     override fun onDestroy() {
@@ -117,9 +116,14 @@ internal abstract class AbsProxyFragment<T : ProxyFragmentViewModel> : Fragment(
         LogUtil.d(TAG, "onDestroy")
     }
 
-    override fun onDetach() {
-        super.onDetach()
-        Log.d(TAG, "onDetach: isAdded = $isAdded, isDetached = $isDetached")
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        LogUtil.d(TAG, "onRequestPermissionsResult: requestCode = $requestCode, permissions = $permissions, grantResults = $grantResults")
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        LogUtil.d(TAG, "onActivityResult: requestCode = $requestCode, data = $data")
     }
 
     override fun requestFragmentManager(): FragmentManager {
@@ -127,7 +131,7 @@ internal abstract class AbsProxyFragment<T : ProxyFragmentViewModel> : Fragment(
         try {
            getParentFragmentManagerMethod =  this::class.java.getMethod("getParentFragmentManager")
         }catch (e: Exception){
-            e.printStackTrace()
+            LogUtil.e(TAG, "requestFragmentManager: e = $e")
         }
         if(getParentFragmentManagerMethod != null){
             return getParentFragmentManagerMethod.invoke(this) as FragmentManager
@@ -136,7 +140,6 @@ internal abstract class AbsProxyFragment<T : ProxyFragmentViewModel> : Fragment(
                 as? FragmentManager
                 ?: throw IllegalStateException("Fragment $this not associated with a fragment manager")
     }
-
 
     override fun obtainFragmentUpdateCallbackManager() = fragmentUpdateCallbackManager
 
@@ -150,16 +153,32 @@ internal abstract class AbsProxyFragment<T : ProxyFragmentViewModel> : Fragment(
 
     override fun gotoSettingsForCheckResults(permissions: List<String>, callback: IPermissionResultsCallback) = startSettingsForCheckResults(permissions.toTypedArray(), callback)
 
+    @CallSuper
+    protected open fun requestNormalPermissions(permissions: Array<String>, callback: IPermissionResultsCallback){
+        LogUtil.d(TAG, "requestNormalPermissions: permissions = ${permissions.toStrings()}")
+    }
+
+    @CallSuper
+    protected open fun requestSpecialPermissions(permissions: Array<String>, callback: IPermissionResultsCallback){
+        LogUtil.d(TAG, "requestSpecialPermissions: permissions = ${permissions.toStrings()}")
+    }
+
+    @CallSuper
+    protected open fun startSettingsForCheckResults(permissions: Array<String>, callback: IPermissionResultsCallback){
+        LogUtil.d(TAG, "startSettingsActivityForResults: permissions = ${permissions.toStrings()}")
+    }
+
+    @CallSuper
+    protected open fun handlePermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: BooleanArray){
+        if(permissionResultCallbacks[requestCode] != null){
+            LogUtil.d(TAG, "handlePermissionsResult: requestCode = $requestCode, permissions = ${permissions.toStrings()}, grantResults = ${grantResults.toStrings()}")
+        }else{
+            LogUtil.d(TAG, "handlePermissionsResult: permission result callback is empty, requestCode = $requestCode, permissions = ${permissions.toStrings()}")
+        }
+    }
+
     protected abstract fun createViewModel(): T
 
     protected abstract fun generateRequestCode(): Int
-
-    protected abstract fun requestNormalPermissions(permissions: Array<String>, callback: IPermissionResultsCallback)
-
-    protected abstract fun requestSpecialPermissions(permissions: Array<String>, callback: IPermissionResultsCallback)
-
-    protected abstract fun startSettingsForCheckResults(permissions: Array<String>, callback: IPermissionResultsCallback)
-
-    protected abstract fun handlePermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: BooleanArray)
 
 }

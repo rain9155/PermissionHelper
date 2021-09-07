@@ -35,7 +35,7 @@ internal object SpecialUtil {
     }
 
     /**
-     * 返回特殊权限对应的Settings设置界面的Intent
+     * 返回特殊权限对应的Settings设置界面的Intent, 有可能会不存在对应的activity，启动时需要try catch，
      */
     @SuppressLint("InlinedApi", "QueryPermissionsNeeded")
     fun getIntent(context: Context, permission: String): Intent{
@@ -53,7 +53,7 @@ internal object SpecialUtil {
                 Settings.ACTION_USAGE_ACCESS_SETTINGS
             }
             Manifest.permission.MANAGE_EXTERNAL_STORAGE -> {
-                Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION
+                Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
             }
             else ->{
                 LogUtil.d(TAG, "getIntent: unknown special permission, permission = $permission")
@@ -81,11 +81,17 @@ internal object SpecialUtil {
                 Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(context)
             }
             Manifest.permission.REQUEST_INSTALL_PACKAGES -> {
-                Build.VERSION.SDK_INT < Build.VERSION_CODES.O || context.packageManager.canRequestPackageInstalls()
+                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M){
+                    false
+                }else if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O){
+                    true
+                }else{
+                    context.packageManager.canRequestPackageInstalls()
+                }
             }
             Manifest.permission.PACKAGE_USAGE_STATS -> {
-                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP){
-                    true
+                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M){
+                    false
                 }else{
                     val appOpsManager = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
                     val mode = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
@@ -97,7 +103,11 @@ internal object SpecialUtil {
                 }
             }
             Manifest.permission.MANAGE_EXTERNAL_STORAGE -> {
-                Build.VERSION.SDK_INT < Build.VERSION_CODES.R || Environment.isExternalStorageManager()
+                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.R){
+                    false
+                }else{
+                    Environment.isExternalStorageManager()
+                }
             }
             else ->{
                 LogUtil.d(TAG, "checkPermission: unknown special permission, permission = $permission")
