@@ -1,11 +1,15 @@
-package com.example.permission.proxy
+package com.example.permission.base
 
+import android.os.Parcel
+import android.os.Parcelable
+import android.os.SystemClock
+import android.util.ArrayMap
 import android.util.SparseArray
 import androidx.lifecycle.*
-import com.example.permission.base.IPermissionResultsCallback
-import com.example.permission.base.IProxyFragmentUpdateCallback
 import com.example.permission.utils.LogUtil
 import java.lang.reflect.Constructor
+import com.example.permission.proxy.*
+import com.example.permission.utils.putAll
 
 /**
  * 代理fragment的ViewModel
@@ -32,6 +36,69 @@ internal fun <T : ViewModel> getViewModel(viewModelStoreOwner: ViewModelStoreOwn
     return twoParamConstructor.newInstance(viewModelStoreOwner.viewModelStore, ViewModelProvider.NewInstanceFactory()).get(viewModelClazz)
 }
 
+
+/**
+ * 权限请求结果暂存
+ */
+internal class PermissionsResult(val requestCode: Int, val permissions: Array<String>, val grantResults: BooleanArray)
+
+/**
+ * 封装特殊权限集合操作
+ */
+internal class SpecialArray(private val permissions: Array<String>) {
+
+    private var index = 0
+    private var grantResults = BooleanArray(permissions.size)
+
+    fun size(): Int {
+        return permissions.size
+    }
+
+    fun hasNext(): Boolean {
+        return index < permissions.size
+    }
+
+    fun nextPermission(): String {
+        if (!hasNext()) {
+            return ""
+        }
+        return permissions[index++]
+    }
+
+    fun hasPrior(): Boolean {
+        return index > 0
+    }
+
+    fun priorPermission(): String {
+        if (!hasPrior()) {
+            return ""
+        }
+        return permissions[index - 1]
+    }
+
+    fun get(index: Int): String {
+        if (index < 0 || index >= size()) {
+            return ""
+        }
+        return permissions[index]
+    }
+
+    fun getPermissions(): Array<String> {
+        return permissions.clone()
+    }
+
+    fun getGrantResults(): BooleanArray {
+        return grantResults.clone()
+    }
+
+    fun setPriorGrantResult(granted: Boolean) {
+        if (!hasPrior()) {
+            return
+        }
+        grantResults[index - 1] = granted
+    }
+}
+
 /**
  * 代理Fragment的ViewModel公共实现
  */
@@ -41,21 +108,19 @@ internal open class ProxyFragmentViewModel : ViewModel() {
     val requestSpecialPermissionsResultLiveData = MutableLiveData<PermissionsResult>()
     val checkPermissionsResultLiveData = MutableLiveData<PermissionsResult>()
 
-    val permissionResultCallbacks = SparseArray<IPermissionResultsCallback>()
     val waitForCheckPermissions = SparseArray<Array<String>>()
     val waitForCheckSpecialPermissions = SparseArray<SpecialArray>()
 
+    val permissionResultCallbacks = SparseArray<IPermissionResultsCallback>()
     val proxyFragmentUpdateCallbacks = ArrayList<IProxyFragmentUpdateCallback>()
 
     override fun onCleared() {
         super.onCleared()
-        permissionResultCallbacks.clear()
         waitForCheckPermissions.clear()
         waitForCheckSpecialPermissions.clear()
+        permissionResultCallbacks.clear()
         proxyFragmentUpdateCallbacks.clear()
     }
-
-    internal class PermissionsResult(val requestCode: Int, val permissions: Array<String>, val grantResults: BooleanArray)
 }
 
 /**

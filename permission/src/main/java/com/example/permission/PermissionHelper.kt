@@ -128,7 +128,7 @@ class PermissionHelper private constructor(private val proxyFragmentProvider: Pr
             this.rejectedCallback,
             this.rejectedForeverCallback,
             this.resultCallback,
-            this.requestPermissions.toMutableList(),
+            this.requestPermissions.toMutableList()
         )
         val interceptors = listOf(
             PreRequestNode(),

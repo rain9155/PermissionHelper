@@ -4,14 +4,16 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.util.Log
+import androidx.lifecycle.Observer
+import com.example.permission.base.*
 import com.example.permission.base.IPermissionResultsCallback
 import com.example.permission.base.PermissionResult
+import com.example.permission.base.ProxyFragmentV1ViewModel
 import com.example.permission.utils.*
 import com.example.permission.utils.PermissionUtil
 import com.example.permission.utils.SpecialUtil
 import kotlin.collections.ArrayList
-import com.example.permission.proxy.ProxyFragmentViewModel.*
+import com.example.permission.base.SpecialArray
 
 /**
  * 申请权限的代理Fragment, 具有生命周期感应，只在Fragment可见时才把结果回调，同时当配置更改销毁重建时也可以恢复状态
@@ -37,8 +39,10 @@ internal class ProxyFragmentV1 : AbsProxyFragment<ProxyFragmentV1ViewModel>() {
         /**
          * 这里需要注意LivData的数据倒灌问题，原因和解决办法：https://juejin.cn/post/6986895858239275015
          */
-        requestNormalPermissionsResultLiveData.observe(this) { result -> handlePermissionsResult(result.requestCode, result.permissions, result.grantResults) }
-        requestSpecialPermissionsResultLiveData.observe(this) { result ->
+        requestNormalPermissionsResultLiveData.observe(this, Observer { result ->
+            handlePermissionsResult(result.requestCode, result.permissions, result.grantResults)
+        })
+        requestSpecialPermissionsResultLiveData.observe(this, Observer { result ->
             val requestCode = result.requestCode
             val specialPermissions = waitForCheckSpecialPermissions[requestCode]
             if(specialPermissions != null && specialPermissions.hasNext()){
@@ -47,8 +51,10 @@ internal class ProxyFragmentV1 : AbsProxyFragment<ProxyFragmentV1ViewModel>() {
                 waitForCheckSpecialPermissions.remove(requestCode)
                 handlePermissionsResult(requestCode, result.permissions, result.grantResults)
             }
-        }
-        checkPermissionsResultLiveData.observe(this) { result -> handlePermissionsResult(result.requestCode, result.permissions, result.grantResults)}
+        })
+        checkPermissionsResultLiveData.observe(this, Observer { result ->
+            handlePermissionsResult(result.requestCode, result.permissions, result.grantResults)
+        })
     }
 
     override fun createViewModel(): ProxyFragmentV1ViewModel {

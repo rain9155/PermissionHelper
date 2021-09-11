@@ -7,34 +7,40 @@ import android.util.SparseArray
  * Created by 陈健宇 at 2021/8/25
  */
 
-internal inline fun <T> SparseArray<T>.forEach(action: (T) -> Unit){
+
+internal inline fun <T> SparseArray<T>.forEachKey(action: (Int) -> Unit) {
+    var index = 0
+    while (index < size()){
+        action.invoke(keyAt(index++))
+    }
+}
+
+internal inline fun <T> SparseArray<T>.forEachValue(action: (T) -> Unit) {
     var index = 0
     while (index < size()){
         action.invoke(valueAt(index++))
     }
 }
 
-internal inline fun <T> SparseArray<T>.forEachWithIndex(action: (Int, T) -> Unit){
-    var index = 0
-    while (index < size()){
-        action.invoke(index, valueAt(index))
-        ++index
+internal fun <T> SparseArray<T>.putAll(sparseArray: SparseArray<T>) {
+    sparseArray.forEachKey { key ->
+        put(key, sparseArray[key])
     }
 }
 
-internal fun <T> SparseArray<T>.isNotEmpty(): Boolean{
+internal fun <T> SparseArray<T>.isNotEmpty(): Boolean {
     return size() > 0
 }
 
-internal fun <T> SparseArray<T>?.isEmpty(): Boolean{
+internal fun <T> SparseArray<T>?.isEmpty(): Boolean {
     return this == null || !isNotEmpty()
 }
 
-internal fun <T> SparseArray<T>.containKey(key: Int): Boolean{
+internal fun <T> SparseArray<T>.containKey(key: Int): Boolean {
     return indexOfKey(key) >= 0
 }
 
-internal fun <T> Array<T>.toStrings(): String{
+internal fun <T> Array<T>.toStrings(): String {
     if(isEmpty()){
         return "[]"
     }
@@ -50,7 +56,7 @@ internal fun <T> Array<T>.toStrings(): String{
     return sb.toString()
 }
 
-internal fun BooleanArray.toStrings(): String{
+internal fun BooleanArray.toStrings(): String {
     if(isEmpty()){
         return "[]"
     }

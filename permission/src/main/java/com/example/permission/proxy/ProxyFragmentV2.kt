@@ -3,7 +3,6 @@ package com.example.permission.proxy
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.util.SparseArray
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultCallback
@@ -11,15 +10,15 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.ActivityResultRegistry
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
+import com.example.permission.base.*
 import com.example.permission.base.IPermissionResultsCallback
 import com.example.permission.base.PermissionResult
+import com.example.permission.base.ProxyFragmentV2ViewModel
 import com.example.permission.utils.*
 import com.example.permission.utils.LogUtil
 import com.example.permission.utils.PermissionUtil
 import com.example.permission.utils.SpecialUtil
-import com.example.permission.proxy.ProxyFragmentViewModel.*
 
 /**
  * 申请权限的代理Fragment, 使用新的Activity Result API实现：https://developer.android.com/training/basics/intents/result#separate
@@ -56,8 +55,10 @@ internal class ProxyFragmentV2 : AbsProxyFragment<ProxyFragmentV2ViewModel>(){
             this@ProxyFragmentV2.checkPermissionsLaunchedKeys = checkPermissionsLaunchedKeys
         }
 
-        requestNormalPermissionsResultLiveData.observe(this) { result -> handlePermissionsResult(result.requestCode, result.permissions, result.grantResults) }
-        requestSpecialPermissionsResultLiveData.observe(this) { result ->
+        requestNormalPermissionsResultLiveData.observe(this, Observer { result ->
+            handlePermissionsResult(result.requestCode, result.permissions, result.grantResults)
+        })
+        requestSpecialPermissionsResultLiveData.observe(this, Observer { result ->
             val requestCode = result.requestCode
             val specialPermissions = waitForCheckSpecialPermissions[requestCode]
             if(specialPermissions != null && specialPermissions.hasNext()){
@@ -68,8 +69,10 @@ internal class ProxyFragmentV2 : AbsProxyFragment<ProxyFragmentV2ViewModel>(){
                 requestSpecialPermissionsLaunchedKeys.remove(requestCode)
                 handlePermissionsResult(requestCode, result.permissions, result.grantResults)
             }
-        }
-        checkPermissionsResultLiveData.observe(this) { result -> handlePermissionsResult(result.requestCode, result.permissions, result.grantResults) }
+        })
+        checkPermissionsResultLiveData.observe(this, Observer { result ->
+            handlePermissionsResult(result.requestCode, result.permissions, result.grantResults)
+        })
 
         requestNormalPermissionsLaunchedKeys.forEach { requestCode -> registerForRequestNormalPermissionsResult(requestCode) }
         requestSpecialPermissionsLaunchedKeys.forEach { requestCode -> registerForRequestSpecialPermissionsResult(requestCode) }
@@ -78,7 +81,7 @@ internal class ProxyFragmentV2 : AbsProxyFragment<ProxyFragmentV2ViewModel>(){
 
     override fun onDestroy() {
         super.onDestroy()
-        launchedLaunchers.forEach { launcher -> launcher.unregister() }
+        launchedLaunchers.forEachValue { launcher -> launcher.unregister() }
         launchedLaunchers.clear()
     }
 

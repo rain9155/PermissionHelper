@@ -15,7 +15,7 @@ import androidx.lifecycle.Lifecycle
 internal data class PermissionResult(
     val name: String,
     val granted: Boolean,
-    val special: Boolean = false,
+    val special: Boolean = false
 )
 
 /**
@@ -34,8 +34,6 @@ internal interface IProxyFragmentUpdateCallback {
     fun onProxyFragmentUpdate(proxyFragment: IProxyFragment)
 
 }
-
-
 
 /**
  * 申请权限的代理Fragment的公共接口

@@ -1,19 +1,17 @@
 package com.example.permission.proxy
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.util.SparseArray
 import androidx.annotation.CallSuper
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.MutableLiveData
+import com.example.permission.base.*
 import com.example.permission.base.IPermissionResultsCallback
 import com.example.permission.base.IProxyFragment
 import com.example.permission.base.IProxyFragmentUpdateCallback
-import com.example.permission.proxy.ProxyFragmentViewModel.PermissionsResult
 import com.example.permission.utils.LogUtil
 import com.example.permission.utils.toStrings
 import java.lang.reflect.Method
@@ -30,38 +28,42 @@ internal abstract class AbsProxyFragment<T : ProxyFragmentViewModel> : Fragment(
 
     protected lateinit var host: FragmentActivity
     protected lateinit var viewModel: T
-    protected lateinit var permissionResultCallbacks: SparseArray<IPermissionResultsCallback>
     protected lateinit var waitForCheckPermissions: SparseArray<Array<String>>
     protected lateinit var waitForCheckSpecialPermissions: SparseArray<SpecialArray>
     protected lateinit var requestNormalPermissionsResultLiveData: MutableLiveData<PermissionsResult>
     protected lateinit var requestSpecialPermissionsResultLiveData: MutableLiveData<PermissionsResult>
     protected lateinit var checkPermissionsResultLiveData: MutableLiveData<PermissionsResult>
 
-    private val pendingProxyFragmentUpdateCallbacks = ArrayList<IProxyFragmentUpdateCallback>()
+    protected lateinit var permissionResultCallbacks: SparseArray<IPermissionResultsCallback>
+    protected lateinit var proxyFragmentUpdateCallbacks: ArrayList<IProxyFragmentUpdateCallback>
+
+    private var pendingAddProxyFragmentUpdateCallbacks = ArrayList<IProxyFragmentUpdateCallback>()
+    private var pendingRemoveProxyFragmentUpdateCallbacks = ArrayList<IProxyFragmentUpdateCallback>()
 
     private val fragmentUpdateCallbackManager = object : IProxyFragment.FragmentUpdateCallbackManager{
 
         override fun add(fragmentUpdateCallback: IProxyFragmentUpdateCallback): Boolean {
-            return if(::viewModel.isInitialized){
-                viewModel.proxyFragmentUpdateCallbacks.add(fragmentUpdateCallback)
+            return if(::proxyFragmentUpdateCallbacks.isInitialized){
+                proxyFragmentUpdateCallbacks.add(fragmentUpdateCallback)
             }else{
-                pendingProxyFragmentUpdateCallbacks.add(fragmentUpdateCallback)
+                pendingAddProxyFragmentUpdateCallbacks.add(fragmentUpdateCallback)
             }
         }
 
         override fun remove(fragmentUpdateCallback: IProxyFragmentUpdateCallback): Boolean {
-            return if(::viewModel.isInitialized){
-                viewModel.proxyFragmentUpdateCallbacks.remove(fragmentUpdateCallback)
+            return if(::proxyFragmentUpdateCallbacks.isInitialized){
+                proxyFragmentUpdateCallbacks.remove(fragmentUpdateCallback)
             }else{
-                pendingProxyFragmentUpdateCallbacks.remove(fragmentUpdateCallback)
+                pendingRemoveProxyFragmentUpdateCallbacks.add(fragmentUpdateCallback)
             }
         }
 
         override fun contain(fragmentUpdateCallback: IProxyFragmentUpdateCallback): Boolean {
-            return if(::viewModel.isInitialized){
-                viewModel.proxyFragmentUpdateCallbacks.contains(fragmentUpdateCallback)
+            return if(::proxyFragmentUpdateCallbacks.isInitialized){
+                proxyFragmentUpdateCallbacks.contains(fragmentUpdateCallback)
             }else{
-                pendingProxyFragmentUpdateCallbacks.contains(fragmentUpdateCallback)
+                !pendingRemoveProxyFragmentUpdateCallbacks.contains(fragmentUpdateCallback)
+                        && pendingAddProxyFragmentUpdateCallbacks.contains(fragmentUpdateCallback)
             }
         }
     }
@@ -69,20 +71,26 @@ internal abstract class AbsProxyFragment<T : ProxyFragmentViewModel> : Fragment(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         LogUtil.d(TAG, "onCreate, savedState = $savedInstanceState")
+
         host = requestActivity()
         viewModel = createViewModel().apply {
-            this@AbsProxyFragment.permissionResultCallbacks = permissionResultCallbacks
             this@AbsProxyFragment.waitForCheckPermissions = waitForCheckPermissions
             this@AbsProxyFragment.waitForCheckSpecialPermissions = waitForCheckSpecialPermissions
             this@AbsProxyFragment.requestNormalPermissionsResultLiveData = requestNormalPermissionsResultLiveData
             this@AbsProxyFragment.requestSpecialPermissionsResultLiveData = requestSpecialPermissionsResultLiveData
             this@AbsProxyFragment.checkPermissionsResultLiveData = checkPermissionsResultLiveData
+            this@AbsProxyFragment.permissionResultCallbacks = permissionResultCallbacks
+            this@AbsProxyFragment.proxyFragmentUpdateCallbacks = proxyFragmentUpdateCallbacks
         }
-        if(pendingProxyFragmentUpdateCallbacks.isNotEmpty()){
-            viewModel.proxyFragmentUpdateCallbacks.addAll(pendingProxyFragmentUpdateCallbacks)
-            pendingProxyFragmentUpdateCallbacks.clear()
+        if(pendingAddProxyFragmentUpdateCallbacks.isNotEmpty()){
+            proxyFragmentUpdateCallbacks.addAll(pendingAddProxyFragmentUpdateCallbacks)
+            pendingAddProxyFragmentUpdateCallbacks.clear()
         }
-        viewModel.proxyFragmentUpdateCallbacks.forEach{ callback -> callback.onProxyFragmentUpdate(this)}
+        if(pendingRemoveProxyFragmentUpdateCallbacks.isNotEmpty()){
+            proxyFragmentUpdateCallbacks.removeAll(pendingRemoveProxyFragmentUpdateCallbacks)
+            pendingRemoveProxyFragmentUpdateCallbacks.clear()
+        }
+        proxyFragmentUpdateCallbacks.forEach { callback -> callback.onProxyFragmentUpdate(this) }
     }
 
     override fun onStart() {
@@ -173,7 +181,7 @@ internal abstract class AbsProxyFragment<T : ProxyFragmentViewModel> : Fragment(
         if(permissionResultCallbacks[requestCode] != null){
             LogUtil.d(TAG, "handlePermissionsResult: requestCode = $requestCode, permissions = ${permissions.toStrings()}, grantResults = ${grantResults.toStrings()}")
         }else{
-            LogUtil.d(TAG, "handlePermissionsResult: permission result callback is empty, requestCode = $requestCode, permissions = ${permissions.toStrings()}")
+            LogUtil.d(TAG, "handlePermissionsResult: permission result callback is empty, requestCode = $requestCode, permissions = ${permissions.toStrings()}, grantResults = ${grantResults.toStrings()}")
         }
     }
 

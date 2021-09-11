@@ -1,13 +1,12 @@
 package com.example.permission.request
 
-import android.app.Activity
 import com.example.permission.base.IChain
 import com.example.permission.base.INode
 import com.example.permission.base.REASON_REJECTED_CALLBACK
 import com.example.permission.base.REASON_REJECTED_FOREVER_CALLBACK
 import com.example.permission.utils.LogUtil
 import com.example.permission.utils.PermissionUtil
-import java.util.LinkedHashSet
+
 
 /**
  * 权限请求的后置处理
