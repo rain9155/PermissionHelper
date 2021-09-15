@@ -3,6 +3,7 @@ package com.example.permission.base
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
+import com.example.permission.proxy.ProxyFragmentProvider
 
 /**
  * 内部统一权限回调处理、接口定义
@@ -36,9 +37,24 @@ internal interface IProxyFragmentUpdateCallback {
 }
 
 /**
+ * 管理[IProxyFragmentUpdateCallback]的增删改查，[IProxyFragmentUpdateCallback]会保存在代理Fragment的ViewModel中，注意内存泄漏
+ */
+internal interface IFragmentUpdateCallbackManager {
+
+    fun add(callback: IProxyFragmentUpdateCallback): Boolean
+
+    fun remove(callback: IProxyFragmentUpdateCallback): Boolean
+
+    fun contain(callback: IProxyFragmentUpdateCallback): Boolean
+
+}
+
+/**
  * 申请权限的代理Fragment的公共接口
  */
 internal interface IProxyFragment {
+
+    fun isAttachActivity(): Boolean
 
     fun requestActivity(): FragmentActivity
 
@@ -46,25 +62,14 @@ internal interface IProxyFragment {
 
     fun obtainLifecycle(): Lifecycle
 
-    fun obtainFragmentUpdateCallbackManager(): FragmentUpdateCallbackManager
+    fun obtainFragmentUpdateCallbackManager(): IFragmentUpdateCallbackManager
+
+    fun obtainRequestManager(): IRequestManager
 
     fun requestNormalPermissions(permissions: List<String>, callback: IPermissionResultsCallback)
 
     fun requestSpecialPermissions(permissions: List<String>, callback: IPermissionResultsCallback)
 
     fun gotoSettingsForCheckResults(permissions: List<String>, callback: IPermissionResultsCallback)
-
-    /**
-     * IProxyFragmentUpdateCallback会保存在代理Fragment的ViewModel中，注意内存泄漏
-     */
-    interface FragmentUpdateCallbackManager{
-
-        fun add(fragmentUpdateCallback: IProxyFragmentUpdateCallback): Boolean
-
-        fun remove(fragmentUpdateCallback: IProxyFragmentUpdateCallback): Boolean
-
-        fun contain(fragmentUpdateCallback: IProxyFragmentUpdateCallback): Boolean
-
-    }
 
 }

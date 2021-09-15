@@ -1,5 +1,6 @@
 package com.example.permission.proxy
 
+import android.util.ArrayMap
 import android.util.Log
 import androidx.annotation.IntDef
 import androidx.fragment.app.Fragment
@@ -16,11 +17,12 @@ import java.lang.Exception
  * 管理代理Fragment的创建与安装
  * Created by 陈健宇 at 2021/8/18
  */
-internal class ProxyFragmentProvider : IRequestStepCallback.Impl{
+internal class ProxyFragmentProvider : IRequestStepCallback.Impl {
 
     companion object{
-        private const val TAG = "FragmentProvider"
+        private const val TAG = "ProxyFragmentProvider"
         private const val TAG_FRAGMENT = "ProxyFragment"
+        private val pendingInstallFragments = ArrayMap<FragmentManager, Fragment>()
     }
 
     @Version
@@ -35,7 +37,6 @@ internal class ProxyFragmentProvider : IRequestStepCallback.Impl{
      * 在代理fragment更新时同时更新宿主activity和代理fragment实例，切断和旧的宿主activity和代理fragment实例的引用链
      */
     private val proxyFragmentUpdateCallback = object : IProxyFragmentUpdateCallback {
-
         override fun onProxyFragmentUpdate(proxyFragment: IProxyFragment) {
             LogUtil.d(TAG, "onProxyFragmentUpdate: proxyFragment = $proxyFragment, provider = ${this@ProxyFragmentProvider}")
             activity = proxyFragment.requestActivity()
@@ -55,7 +56,6 @@ internal class ProxyFragmentProvider : IRequestStepCallback.Impl{
         LogUtil.d(TAG, "onChange：fragment = $fragment")
         if(fragmentManager.findFragmentByTag(TAG_FRAGMENT) == null && fragment != null){
             installFragment(fragment)
-            installFragmentLiveData.value = null
         }
     }
 
@@ -68,22 +68,24 @@ internal class ProxyFragmentProvider : IRequestStepCallback.Impl{
 
     constructor(fragment: Fragment){
         this.activity = fragment.requireActivity()
-        this.fragmentManager = fragment.childFragmentManager
+        this.fragmentManager = activity.supportFragmentManager
         observeInstallFragmentLiveData()
         createOrUpdateProxyFragmentAgent()
     }
 
     fun get() = proxyFragmentAgent
 
-    override fun onRequestStart() {
-        super.onRequestStart()
+    fun stableIdentify() = "$TAG:${activity::class.java.name}"
+
+    override fun onRequestStart(request: Request) {
+        super.onRequestStart(request)
         if(this::proxyFragmentAgent.isInitialized){
             proxyFragmentAgent.obtainFragmentUpdateCallbackManager().add(proxyFragmentUpdateCallback)
         }
     }
 
-    override fun onRequestFinish() {
-        super.onRequestFinish()
+    override fun onRequestFinish(request: Request) {
+        super.onRequestFinish(request)
         if(this::proxyFragmentAgent.isInitialized){
             proxyFragmentAgent.obtainFragmentUpdateCallbackManager().remove(proxyFragmentUpdateCallback)
         }
@@ -97,37 +99,44 @@ internal class ProxyFragmentProvider : IRequestStepCallback.Impl{
     private fun createOrUpdateProxyFragmentAgent(){
         var fragment = fragmentManager.findFragmentByTag(TAG_FRAGMENT)
         if(fragment == null){
-            fragment = initializeFragment()
-            installFragmentLiveData.value = fragment
+            fragment = pendingInstallFragments[fragmentManager]
+            if(fragment == null){
+                fragment = initializeFragment()
+                pendingInstallFragments[fragmentManager] = fragment
+                installFragmentLiveData.value = fragment
+            }
         }else{
-            LogUtil.d(TAG, "proxyFragment already exist")
+            LogUtil.d(TAG, "createOrUpdateProxyFragmentAgent: proxyFragment already exist")
         }
         val proxyFragment = fragment as IProxyFragment
         if(!this::proxyFragmentAgent.isInitialized){
             proxyFragmentAgent = ProxyFragmentAgent(activity, fragment as IProxyFragment)
         }else {
-            LogUtil.d(TAG, "update proxyFragmentAgent")
+            LogUtil.d(TAG, "createOrUpdateProxyFragmentAgent: update proxyFragmentAgent")
             proxyFragmentAgent.onProxyFragmentUpdate(proxyFragment)
         }
     }
 
     private fun initializeFragment(): Fragment{
-        val isSelectV2 = if(version == VERSION_V1){
-            false
-        }else if(version == VERSION_V2){
-            true
-        }else{
-            tryFindActivityResultRegistry()
+        val isSelectV2 = when (version) {
+            VERSION_V1 -> {
+                false
+            }
+            VERSION_V2 -> {
+                true
+            }
+            else -> {
+                tryFindActivityResultRegistry()
+            }
         }
         return if(isSelectV2){
-            LogUtil.d(TAG, "initialize proxyFragmentV2")
+            LogUtil.d(TAG, "initializeFragment: initialize proxyFragmentV2")
             ProxyFragmentV2.newInstance()
         }else{
-            LogUtil.d(TAG, "initialize proxyFragmentV1")
+            LogUtil.d(TAG, "initializeFragment: initialize proxyFragmentV1")
             ProxyFragmentV1.newInstance()
         }
     }
-
 
     private fun tryFindActivityResultRegistry(): Boolean{
         Log.d(TAG, "tryFindActivityResultRegistry")
@@ -148,6 +157,9 @@ internal class ProxyFragmentProvider : IRequestStepCallback.Impl{
         } catch (e: Exception) {
             LogUtil.e(TAG, "installFragment: e = $e")
             throw InstantiationException("$fragment install fail")
+        }finally {
+            pendingInstallFragments.remove(fragmentManager)
+            installFragmentLiveData.value = null
         }
     }
 

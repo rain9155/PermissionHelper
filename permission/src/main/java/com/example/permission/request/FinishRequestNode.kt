@@ -17,17 +17,16 @@ internal class FinishRequestNode : INode {
     override fun handle(chain: IChain) {
         val request = chain.getRequest()
 
-        request.dispatchRequestStep { callback ->
-            callback.onRequestFinish()
+        request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
+            callback.onRequestFinish(request)
         }
-        request.clearRequestStepCallback()
+        request.getRequestStepCallbackManager().clear()
+        request.getProxyFragment().obtainRequestManager().finishRequest(request)
 
         if(request.requestPermissions.isNotEmpty()){
             request.rejectedPermissions.addAll(request.requestPermissions)
             request.requestPermissions.clear()
         }
-
-        LogUtil.d(TAG, "handle: request = $request")
 
         if(request.resultCallback != null){
             val grantedPermissions = request.getClonedGrantedPermissions()

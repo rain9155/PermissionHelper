@@ -18,14 +18,20 @@ internal class DefaultRequestProcess(private val chain: IChain) : IRequestCallba
     override fun requestContinue() {
         LogUtil.d(TAG, "requestContinue")
         val request = chain.getRequest()
-        request.dispatchRequestStep { callback ->
-            callback.onRequestResume(REASON_REQUEST_CALLBACK)
+        request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
+            callback.onRequestResume(request, REASON_REQUEST_CALLBACK)
         }
+        request.requestCallback = null
         chain.process(request)
     }
 
     override fun requestTermination() {
         LogUtil.d(TAG, "requestTermination")
-        chain.process(chain.getRequest(), finish = true)
+        val request = chain.getRequest()
+        request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
+            callback.onRequestResume(request, REASON_REQUEST_CALLBACK)
+        }
+        request.requestCallback = null
+        chain.process(request, finish = true)
     }
 }

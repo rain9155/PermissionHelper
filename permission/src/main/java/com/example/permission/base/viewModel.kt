@@ -1,22 +1,17 @@
 package com.example.permission.base
 
-import android.os.Parcel
-import android.os.Parcelable
-import android.os.SystemClock
-import android.util.ArrayMap
 import android.util.SparseArray
 import androidx.lifecycle.*
 import com.example.permission.utils.LogUtil
 import java.lang.reflect.Constructor
 import com.example.permission.proxy.*
-import com.example.permission.utils.putAll
 
 /**
  * 代理fragment的ViewModel
  * Created by 陈健宇 at 2021/8/25
  */
 
-const val TAG = "ViewModel"
+private const val TAG = "ViewModel"
 
 /**
  * 从[ViewModelProvider]中获取viewModel
@@ -114,12 +109,15 @@ internal open class ProxyFragmentViewModel : ViewModel() {
     val permissionResultCallbacks = SparseArray<IPermissionResultsCallback>()
     val proxyFragmentUpdateCallbacks = ArrayList<IProxyFragmentUpdateCallback>()
 
+    var requestManager: IRequestManager? = null
+
     override fun onCleared() {
         super.onCleared()
         waitForCheckPermissions.clear()
         waitForCheckSpecialPermissions.clear()
         permissionResultCallbacks.clear()
         proxyFragmentUpdateCallbacks.clear()
+        requestManager?.clearRequests()
     }
 }
 

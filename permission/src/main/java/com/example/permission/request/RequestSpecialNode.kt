@@ -21,8 +21,6 @@ internal class RequestSpecialNode : INode {
     override fun handle(chain: IChain) {
         val request = chain.getRequest()
 
-        LogUtil.d(TAG, "handle: request = $request")
-
         val specialPermissions = ArrayList<String>()
         request.requestPermissions.forEach {permission ->
             if(SpecialUtil.isSpecialPermission(permission)){
@@ -30,8 +28,8 @@ internal class RequestSpecialNode : INode {
             }
         }
 
-        request.dispatchRequestStep { callback ->
-            callback.onRequestPermissions(specialPermissions)
+        request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
+            callback.onRequestPermissions(request, specialPermissions)
         }
 
         request.getProxyFragment().requestSpecialPermissions(specialPermissions, object : IPermissionResultsCallback {

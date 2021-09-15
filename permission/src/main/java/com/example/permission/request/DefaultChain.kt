@@ -15,6 +15,10 @@ internal class DefaultChain constructor(
     private val index: Int = 0
 ) : IChain {
 
+    init {
+        req.linkedChain = this
+    }
+
     override fun getRequest(): Request {
         return req
     }
@@ -38,11 +42,7 @@ internal class DefaultChain constructor(
         }
         request.isRestart = restart
         val node = nodes[finalIndex]
-        node.handle(DefaultChain(
-            request,
-            nodes,
-            index = finalIndex + 1
-        ))
+        node.handle(DefaultChain(request, nodes, index = finalIndex + 1))
     }
 
 }

@@ -11,6 +11,7 @@ import com.example.permission.base.IPermissionResultsCallback
 import com.example.permission.base.IProxyFragment
 import com.example.permission.base.IProxyFragmentUpdateCallback
 import com.example.permission.base.PermissionResult
+import com.example.permission.request.DefaultRequestManager
 import com.example.permission.utils.LogUtil
 import java.util.*
 
@@ -65,20 +66,28 @@ internal class ProxyFragmentAgent(private var activity: FragmentActivity, privat
         observeProxyFragmentLifecycle()
     }
 
+    override fun isAttachActivity(): Boolean {
+        return proxyFragment.isAttachActivity()
+    }
+
     override fun requestActivity(): FragmentActivity {
-        return activity
+        return if(isAttachActivity()) proxyFragment.requestActivity() else activity
     }
 
     override fun requestFragmentManager(): FragmentManager {
-        return proxyFragment.requestFragmentManager()
+        return if(isAttachActivity()) proxyFragment.requestFragmentManager() else (object : FragmentManager(){})
     }
 
     override fun obtainLifecycle(): Lifecycle {
         return proxyFragment.obtainLifecycle()
     }
 
-    override fun obtainFragmentUpdateCallbackManager(): IProxyFragment.FragmentUpdateCallbackManager {
+    override fun obtainFragmentUpdateCallbackManager(): IFragmentUpdateCallbackManager {
         return proxyFragment.obtainFragmentUpdateCallbackManager()
+    }
+
+    override fun obtainRequestManager(): IRequestManager {
+        return proxyFragment.obtainRequestManager()
     }
 
     override fun requestNormalPermissions(permissions: List<String>, callback: IPermissionResultsCallback) {

@@ -12,6 +12,7 @@ import com.example.permission.base.*
 import com.example.permission.base.IPermissionResultsCallback
 import com.example.permission.base.IProxyFragment
 import com.example.permission.base.IProxyFragmentUpdateCallback
+import com.example.permission.request.DefaultRequestManager
 import com.example.permission.utils.LogUtil
 import com.example.permission.utils.toStrings
 import java.lang.reflect.Method
@@ -39,38 +40,39 @@ internal abstract class AbsProxyFragment<T : ProxyFragmentViewModel> : Fragment(
 
     private var pendingAddProxyFragmentUpdateCallbacks = ArrayList<IProxyFragmentUpdateCallback>()
     private var pendingRemoveProxyFragmentUpdateCallbacks = ArrayList<IProxyFragmentUpdateCallback>()
+    private var pendingRequestManager: IRequestManager? = null
 
-    private val fragmentUpdateCallbackManager = object : IProxyFragment.FragmentUpdateCallbackManager{
+    private val fragmentUpdateCallbackManager = object : IFragmentUpdateCallbackManager{
 
-        override fun add(fragmentUpdateCallback: IProxyFragmentUpdateCallback): Boolean {
+        override fun add(callback: IProxyFragmentUpdateCallback): Boolean {
             return if(::proxyFragmentUpdateCallbacks.isInitialized){
-                proxyFragmentUpdateCallbacks.add(fragmentUpdateCallback)
+                proxyFragmentUpdateCallbacks.add(callback)
             }else{
-                pendingAddProxyFragmentUpdateCallbacks.add(fragmentUpdateCallback)
+                pendingAddProxyFragmentUpdateCallbacks.add(callback)
             }
         }
 
-        override fun remove(fragmentUpdateCallback: IProxyFragmentUpdateCallback): Boolean {
+        override fun remove(callback: IProxyFragmentUpdateCallback): Boolean {
             return if(::proxyFragmentUpdateCallbacks.isInitialized){
-                proxyFragmentUpdateCallbacks.remove(fragmentUpdateCallback)
+                proxyFragmentUpdateCallbacks.remove(callback)
             }else{
-                pendingRemoveProxyFragmentUpdateCallbacks.add(fragmentUpdateCallback)
+                pendingRemoveProxyFragmentUpdateCallbacks.add(callback)
             }
         }
 
-        override fun contain(fragmentUpdateCallback: IProxyFragmentUpdateCallback): Boolean {
+        override fun contain(callback: IProxyFragmentUpdateCallback): Boolean {
             return if(::proxyFragmentUpdateCallbacks.isInitialized){
-                proxyFragmentUpdateCallbacks.contains(fragmentUpdateCallback)
+                proxyFragmentUpdateCallbacks.contains(callback)
             }else{
-                !pendingRemoveProxyFragmentUpdateCallbacks.contains(fragmentUpdateCallback)
-                        && pendingAddProxyFragmentUpdateCallbacks.contains(fragmentUpdateCallback)
+                !pendingRemoveProxyFragmentUpdateCallbacks.contains(callback)
+                        && pendingAddProxyFragmentUpdateCallbacks.contains(callback)
             }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        LogUtil.d(TAG, "onCreate, savedState = $savedInstanceState")
+        LogUtil.d(TAG, "onCreate, savedState = $savedInstanceState, name = ${this::class.java.name}")
 
         host = requestActivity()
         viewModel = createViewModel().apply {
@@ -81,6 +83,11 @@ internal abstract class AbsProxyFragment<T : ProxyFragmentViewModel> : Fragment(
             this@AbsProxyFragment.checkPermissionsResultLiveData = checkPermissionsResultLiveData
             this@AbsProxyFragment.permissionResultCallbacks = permissionResultCallbacks
             this@AbsProxyFragment.proxyFragmentUpdateCallbacks = proxyFragmentUpdateCallbacks
+            if(this@AbsProxyFragment.pendingRequestManager != null){
+                requestManager = this@AbsProxyFragment.pendingRequestManager
+            }else if(requestManager != null) {
+                this@AbsProxyFragment.pendingRequestManager = requestManager
+            }
         }
         if(pendingAddProxyFragmentUpdateCallbacks.isNotEmpty()){
             proxyFragmentUpdateCallbacks.addAll(pendingAddProxyFragmentUpdateCallbacks)
@@ -148,6 +155,18 @@ internal abstract class AbsProxyFragment<T : ProxyFragmentViewModel> : Fragment(
                 as? FragmentManager
                 ?: throw IllegalStateException("Fragment $this not associated with a fragment manager")
     }
+
+    override fun obtainRequestManager(): IRequestManager {
+        if(pendingRequestManager == null){
+            pendingRequestManager = DefaultRequestManager.create()
+        }
+        if(this::viewModel.isInitialized) {
+            viewModel.requestManager = pendingRequestManager
+        }
+        return pendingRequestManager!!
+    }
+
+    override fun isAttachActivity() = activity != null
 
     override fun obtainFragmentUpdateCallbackManager() = fragmentUpdateCallbackManager
 

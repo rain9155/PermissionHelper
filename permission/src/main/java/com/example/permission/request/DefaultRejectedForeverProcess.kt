@@ -12,7 +12,7 @@ import com.example.permission.utils.PermissionUtil
  * [IRejectedForeverCallback.IRejectedForeverProcess]的默认实现
  * Created by 陈健宇 at 2021/8/18
  */
-internal class DefaultRejectedForeverProcess(private val chain: IChain) : IRejectedForeverCallback.IRejectedForeverProcess{
+internal class DefaultRejectedForeverProcess(private val chain: IChain) : IRejectedForeverCallback.IRejectedForeverProcess {
 
     companion object{
         private const val TAG = "DefaultRejectedForeverProcess"
@@ -26,9 +26,10 @@ internal class DefaultRejectedForeverProcess(private val chain: IChain) : IRejec
             addAll(request.getClonedRejectedPermissions())
             addAll(request.getClonedRejectedForeverPermissions())
         }
-        request.dispatchRequestStep { callback ->
-            callback.onRequestResume(REASON_REJECTED_FOREVER_CALLBACK)
+        request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
+            callback.onRequestResume(request, REASON_REJECTED_FOREVER_CALLBACK)
         }
+        request.rejectedForeverCallback = null
         request.getProxyFragment().gotoSettingsForCheckResults(permissions, object : IPermissionResultsCallback{
             override fun onPermissionResults(permissionResults: List<PermissionResult>) {
                 permissionResults.forEach {result ->
@@ -62,6 +63,11 @@ internal class DefaultRejectedForeverProcess(private val chain: IChain) : IRejec
 
     override fun requestTermination() {
         LogUtil.d(TAG, "requestTermination")
-        chain.process(chain.getRequest(), finish  = true)
+        val request = chain.getRequest()
+        request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
+            callback.onRequestResume(request, REASON_REJECTED_FOREVER_CALLBACK)
+        }
+        request.rejectedForeverCallback = null
+        chain.process(request, finish  = true)
     }
 }

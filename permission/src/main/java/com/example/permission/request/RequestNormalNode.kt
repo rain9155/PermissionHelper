@@ -27,8 +27,6 @@ internal class RequestNormalNode : INode {
     override fun handle(chain: IChain) {
         val request = chain.getRequest()
 
-        LogUtil.d(TAG, "handle: request = $request")
-
         val normalPermissions = ArrayList<String>()
         request.requestPermissions.forEach {permission ->
             if(!SpecialUtil.isSpecialPermission(permission)){
@@ -53,12 +51,10 @@ internal class RequestNormalNode : INode {
         }
     }
 
-    fun requestNormalPermissions(chain: IChain, request: Request, normalPermissions: List<String>){
-
-        request.dispatchRequestStep { callback ->
-            callback.onRequestPermissions(normalPermissions)
+    private fun requestNormalPermissions(chain: IChain, request: Request, normalPermissions: List<String>){
+        request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
+            callback.onRequestPermissions(request, normalPermissions)
         }
-
         request.getProxyFragment().requestNormalPermissions(normalPermissions, object : IPermissionResultsCallback {
             override fun onPermissionResults(permissionResults: List<PermissionResult>) {
                 permissionResults.forEach {result ->
