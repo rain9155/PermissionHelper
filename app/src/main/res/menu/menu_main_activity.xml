@@ -3,6 +3,10 @@
 
     <item
         android:id="@+id/item_start_permission_activity"
-        android:title="权限列表"/>
+        android:title="权限组和权限列表"/>
+
+    <item
+        android:id="@+id/item_start_permission_settings"
+        android:title="前往权限设置中心"/>
 
 </menu>

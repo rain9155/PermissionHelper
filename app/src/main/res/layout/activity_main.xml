@@ -1,35 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.fragment.app.FragmentContainerView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/fragment_container_view"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:name="com.example.permissionhelper.PermissionFragment"
     tools:context=".MainActivity">
 
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/fragment_container_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:name="com.example.permissionhelper.PermissionFragment"/>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_centerInParent="true">
-
-        <Button
-            android:id="@+id/btn_request_permission"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="申请权限"/>
-
-        <Button
-            android:id="@+id/btn_request_permission_explain"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="申请权限，解释原因"/>
-
-    </LinearLayout>
-
-</RelativeLayout>
+</androidx.fragment.app.FragmentContainerView>
