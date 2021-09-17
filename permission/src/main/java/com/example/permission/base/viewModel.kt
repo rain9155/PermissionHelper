@@ -5,6 +5,8 @@ import androidx.lifecycle.*
 import com.example.permission.utils.LogUtil
 import java.lang.reflect.Constructor
 import com.example.permission.proxy.*
+import com.example.permission.request.DefaultRequestManager
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * 代理fragment的ViewModel
@@ -107,17 +109,18 @@ internal open class ProxyFragmentViewModel : ViewModel() {
     val waitForCheckSpecialPermissions = SparseArray<SpecialArray>()
 
     val permissionResultCallbacks = SparseArray<IPermissionResultsCallback>()
-    val proxyFragmentUpdateCallbacks = ArrayList<IProxyFragmentUpdateCallback>()
+    val proxyFragmentUpdateCallbacks = CopyOnWriteArrayList<IProxyFragmentUpdateCallback>()
 
-    var requestManager: IRequestManager? = null
+    var pageIdentity = ""
 
     override fun onCleared() {
         super.onCleared()
+        LogUtil.d(TAG, "onCleared")
         waitForCheckPermissions.clear()
         waitForCheckSpecialPermissions.clear()
         permissionResultCallbacks.clear()
         proxyFragmentUpdateCallbacks.clear()
-        requestManager?.clearRequests()
+        DefaultRequestManager.instance.clearPageRequests(pageIdentity)
     }
 }
 

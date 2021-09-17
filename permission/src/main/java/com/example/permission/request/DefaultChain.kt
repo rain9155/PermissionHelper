@@ -41,6 +41,7 @@ internal class DefaultChain constructor(
             }
         }
         request.isRestart = restart
+        request.isFinish = finish
         val node = nodes[finalIndex]
         node.handle(DefaultChain(request, nodes, index = finalIndex + 1))
     }

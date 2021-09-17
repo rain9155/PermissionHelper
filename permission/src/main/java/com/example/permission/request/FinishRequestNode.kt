@@ -21,14 +21,15 @@ internal class FinishRequestNode : INode {
             callback.onRequestFinish(request)
         }
         request.getRequestStepCallbackManager().clear()
-        request.getProxyFragment().obtainRequestManager().finishRequest(request)
 
-        if(request.requestPermissions.isNotEmpty()){
+        DefaultRequestManager.instance.finishRequest(request.requestKey)
+
+        if(!request.isInterrupt && request.requestPermissions.isNotEmpty()){
             request.rejectedPermissions.addAll(request.requestPermissions)
             request.requestPermissions.clear()
         }
 
-        if(request.resultCallback != null){
+        if(!request.isInterrupt && request.resultCallback != null){
             val grantedPermissions = request.getClonedGrantedPermissions()
             val rejectedPermissions = ArrayList<String>(request.rejectedPermissions.size + request.rejectedForeverPermissions.size).apply {
                 addAll(request.rejectedPermissions)

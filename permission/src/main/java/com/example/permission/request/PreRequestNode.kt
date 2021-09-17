@@ -8,6 +8,7 @@ import com.example.permission.base.REASON_REQUEST_CALLBACK
 import com.example.permission.base.Request
 import com.example.permission.utils.LogUtil
 import com.example.permission.utils.PermissionUtil
+import java.lang.Exception
 
 /**
  * 权限请求的前置处理
@@ -27,7 +28,12 @@ internal class PreRequestNode : INode, IRequestStepCallback.Impl() {
             LogUtil.d(TAG, "onProxyFragmentUpdate: pauseReason = $pauseReason")
             pauseRequest?.also { request ->
                 if(pauseReason == REASON_REQUEST_CALLBACK){
-                    callOnRequestCallback(request)
+                    if(request.reCallbackAfterConfigurationChanged){
+                        callOnRequestCallback(request)
+                    }else{
+                        request.isInterrupt = true
+                        request.linkedChain?.process(request, finish = true)
+                    }
                 }
             }
         }
@@ -35,9 +41,7 @@ internal class PreRequestNode : INode, IRequestStepCallback.Impl() {
 
     override fun onRequestStart(request: Request) {
         super.onRequestStart(request)
-        if(request.reCallbackAfterConfigurationChanged){
-            request.getProxyFragment().obtainFragmentUpdateCallbackManager().add(proxyFragmentUpdateCallback)
-        }
+        request.getProxyFragment().obtainFragmentUpdateCallbackManager().add(proxyFragmentUpdateCallback)
     }
 
     override fun onRequestPause(request: Request, reason: Int) {
@@ -54,9 +58,7 @@ internal class PreRequestNode : INode, IRequestStepCallback.Impl() {
 
     override fun onRequestFinish(request: Request) {
         super.onRequestFinish(request)
-        if(request.reCallbackAfterConfigurationChanged){
-            request.getProxyFragment().obtainFragmentUpdateCallbackManager().remove(proxyFragmentUpdateCallback)
-        }
+        request.getProxyFragment().obtainFragmentUpdateCallbackManager().remove(proxyFragmentUpdateCallback)
     }
 
     override fun handle(chain: IChain) {
@@ -83,10 +85,18 @@ internal class PreRequestNode : INode, IRequestStepCallback.Impl() {
             request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
                 callback.onRequestPause(request, REASON_REQUEST_CALLBACK)
             }
-            request.requestCallback!!.onRequest(
-                DefaultRequestProcess(request.linkedChain!!),
-                request.getClonedRequestPermissions()
-            )
+            try {
+                LogUtil.d(TAG, "callOnRequestCallback")
+                request.requestCallback!!.onRequest(
+                    DefaultRequestProcess(request.linkedChain!!),
+                    request.getClonedRequestPermissions()
+                )
+            }catch (e: Exception) {
+                LogUtil.e(TAG, "callOnRequestCallback: e = $e")
+                request.isInterrupt = true
+                request.linkedChain?.process(request, finish = true)
+                throw e
+            }
             return true
         }
         return false

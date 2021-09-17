@@ -4,8 +4,10 @@ import android.app.Activity
 import android.content.Context
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import com.example.permission.base.IRequestManager
 import com.example.permission.base.Request
 import com.example.permission.proxy.ProxyFragmentProvider
+import com.example.permission.request.DefaultRequestManager
 import com.example.permission.utils.PermissionUtil
 import com.example.permission.utils.SettingsUtil
 import kotlin.collections.LinkedHashSet
@@ -132,15 +134,15 @@ class PermissionHelper private constructor(private val fragmentProvider: ProxyFr
     }
 
     private fun requestInternal() {
-        fragmentProvider.get().obtainRequestManager().startRequest(
-            Request(
+        DefaultRequestManager.instance.startRequest(
+            IRequestManager.Request(
                 fragmentProvider,
-                reCallbackAfterConfigurationChanged,
+                requestPermissions.toList(),
                 requestCallback,
                 rejectedCallback,
                 rejectedForeverCallback,
                 resultCallback,
-                requestPermissions.toMutableList()
+                reCallbackAfterConfigurationChanged
             )
         )
     }

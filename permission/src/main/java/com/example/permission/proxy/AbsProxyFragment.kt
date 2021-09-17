@@ -16,6 +16,7 @@ import com.example.permission.request.DefaultRequestManager
 import com.example.permission.utils.LogUtil
 import com.example.permission.utils.toStrings
 import java.lang.reflect.Method
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * 代理fragment的公共实现
@@ -36,11 +37,10 @@ internal abstract class AbsProxyFragment<T : ProxyFragmentViewModel> : Fragment(
     protected lateinit var checkPermissionsResultLiveData: MutableLiveData<PermissionsResult>
 
     protected lateinit var permissionResultCallbacks: SparseArray<IPermissionResultsCallback>
-    protected lateinit var proxyFragmentUpdateCallbacks: ArrayList<IProxyFragmentUpdateCallback>
+    protected lateinit var proxyFragmentUpdateCallbacks: CopyOnWriteArrayList<IProxyFragmentUpdateCallback>
 
     private var pendingAddProxyFragmentUpdateCallbacks = ArrayList<IProxyFragmentUpdateCallback>()
     private var pendingRemoveProxyFragmentUpdateCallbacks = ArrayList<IProxyFragmentUpdateCallback>()
-    private var pendingRequestManager: IRequestManager? = null
 
     private val fragmentUpdateCallbackManager = object : IFragmentUpdateCallbackManager{
 
@@ -83,11 +83,9 @@ internal abstract class AbsProxyFragment<T : ProxyFragmentViewModel> : Fragment(
             this@AbsProxyFragment.checkPermissionsResultLiveData = checkPermissionsResultLiveData
             this@AbsProxyFragment.permissionResultCallbacks = permissionResultCallbacks
             this@AbsProxyFragment.proxyFragmentUpdateCallbacks = proxyFragmentUpdateCallbacks
-            if(this@AbsProxyFragment.pendingRequestManager != null){
-                requestManager = this@AbsProxyFragment.pendingRequestManager
-            }else if(requestManager != null) {
-                this@AbsProxyFragment.pendingRequestManager = requestManager
-            }
+        }
+        if(viewModel.pageIdentity.isEmpty()) {
+            viewModel.pageIdentity = requestPageIdentify()
         }
         if(pendingAddProxyFragmentUpdateCallbacks.isNotEmpty()){
             proxyFragmentUpdateCallbacks.addAll(pendingAddProxyFragmentUpdateCallbacks)
@@ -156,15 +154,7 @@ internal abstract class AbsProxyFragment<T : ProxyFragmentViewModel> : Fragment(
                 ?: throw IllegalStateException("Fragment $this not associated with a fragment manager")
     }
 
-    override fun obtainRequestManager(): IRequestManager {
-        if(pendingRequestManager == null){
-            pendingRequestManager = DefaultRequestManager.create()
-        }
-        if(this::viewModel.isInitialized) {
-            viewModel.requestManager = pendingRequestManager
-        }
-        return pendingRequestManager!!
-    }
+    override fun requestPageIdentify(): String = requestActivity()::class.java.name
 
     override fun isAttachActivity() = activity != null
 

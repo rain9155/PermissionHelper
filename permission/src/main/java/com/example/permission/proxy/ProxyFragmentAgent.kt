@@ -78,16 +78,16 @@ internal class ProxyFragmentAgent(private var activity: FragmentActivity, privat
         return if(isAttachActivity()) proxyFragment.requestFragmentManager() else (object : FragmentManager(){})
     }
 
+    override fun requestPageIdentify(): String {
+        return if(isAttachActivity()) proxyFragment.requestPageIdentify() else activity::class.java.name
+    }
+
     override fun obtainLifecycle(): Lifecycle {
         return proxyFragment.obtainLifecycle()
     }
 
     override fun obtainFragmentUpdateCallbackManager(): IFragmentUpdateCallbackManager {
         return proxyFragment.obtainFragmentUpdateCallbackManager()
-    }
-
-    override fun obtainRequestManager(): IRequestManager {
-        return proxyFragment.obtainRequestManager()
     }
 
     override fun requestNormalPermissions(permissions: List<String>, callback: IPermissionResultsCallback) {

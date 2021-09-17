@@ -70,9 +70,19 @@ internal interface IRequestManager {
 
     fun startRequest(request: Request)
 
-    fun finishRequest(request: Request)
+    fun finishRequest(requestKey: String)
 
-    fun clearRequests()
+    fun clearPageRequests(pageIdentity: String)
+
+    class Request(
+        val fragmentProvider: ProxyFragmentProvider,
+        val requestPermissions: List<String>,
+        val requestCallback: IRequestCallback?,
+        val rejectedCallback: IRejectedCallback?,
+        val rejectedForeverCallback: IRejectedForeverCallback?,
+        val resultCallback: IResultCallback?,
+        val reCallbackAfterConfigurationChanged: Boolean
+    )
 
 }
 
@@ -84,7 +94,8 @@ internal interface IRequestManager {
  */
 internal data class Request(
     val fragmentProvider: ProxyFragmentProvider,
-    val reCallbackAfterConfigurationChanged: Boolean,
+    val requestKey: String,
+    var reCallbackAfterConfigurationChanged: Boolean,
     var requestCallback: IRequestCallback?,
     var rejectedCallback: IRejectedCallback?,
     var rejectedForeverCallback: IRejectedForeverCallback?,
@@ -93,8 +104,9 @@ internal data class Request(
     val grantedPermissions: MutableList<String> = ArrayList(),
     val rejectedPermissions: MutableList<String> = ArrayList(),
     val rejectedForeverPermissions: MutableList<String> = ArrayList(),
-    var requestKey: String = "",
     var isRestart: Boolean = false,
+    var isInterrupt: Boolean = false,
+    var isFinish: Boolean = false,
     var linkedChain: IChain? = null
 ) : IRequestStepCallback.Impl() {
 

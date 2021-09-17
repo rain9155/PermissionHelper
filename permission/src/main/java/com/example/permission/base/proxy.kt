@@ -60,11 +60,11 @@ internal interface IProxyFragment {
 
     fun requestFragmentManager(): FragmentManager
 
+    fun requestPageIdentify(): String
+
     fun obtainLifecycle(): Lifecycle
 
     fun obtainFragmentUpdateCallbackManager(): IFragmentUpdateCallbackManager
-
-    fun obtainRequestManager(): IRequestManager
 
     fun requestNormalPermissions(permissions: List<String>, callback: IPermissionResultsCallback)
 

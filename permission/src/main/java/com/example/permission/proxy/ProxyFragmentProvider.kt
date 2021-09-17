@@ -75,8 +75,6 @@ internal class ProxyFragmentProvider : IRequestStepCallback.Impl {
 
     fun get() = proxyFragmentAgent
 
-    fun stableIdentify() = "$TAG:${activity::class.java.name}"
-
     override fun onRequestStart(request: Request) {
         super.onRequestStart(request)
         if(this::proxyFragmentAgent.isInitialized){

@@ -8,6 +8,7 @@ import com.example.permission.base.REASON_REJECTED_CALLBACK
 import com.example.permission.base.REASON_REJECTED_FOREVER_CALLBACK
 import com.example.permission.utils.LogUtil
 import com.example.permission.utils.PermissionUtil
+import java.lang.Exception
 
 
 /**
@@ -28,9 +29,19 @@ internal class PostRequestNode : INode, IRequestStepCallback.Impl() {
             LogUtil.d(TAG, "onProxyFragmentUpdate: pauseReason = $pauseReason")
             pauseRequest?.also { request ->
                 if(pauseReason == REASON_REJECTED_CALLBACK) {
-                    callOnRejectedCallback(request)
+                    if(request.reCallbackAfterConfigurationChanged) {
+                        callOnRejectedCallback(request)
+                    }else {
+                        request.isInterrupt = true
+                        request.linkedChain?.process(request, finish = true)
+                    }
                 }else if(pauseReason == REASON_REJECTED_FOREVER_CALLBACK) {
-                    callOnRejectedForeverCallback(request)
+                    if(request.reCallbackAfterConfigurationChanged) {
+                        callOnRejectedForeverCallback(request)
+                    }else {
+                        request.isInterrupt = true
+                        request.linkedChain?.process(request, finish = true)
+                    }
                 }
             }
         }
@@ -38,9 +49,7 @@ internal class PostRequestNode : INode, IRequestStepCallback.Impl() {
 
     override fun onRequestStart(request: Request) {
         super.onRequestStart(request)
-        if(request.reCallbackAfterConfigurationChanged){
-            request.getProxyFragment().obtainFragmentUpdateCallbackManager().add(proxyFragmentUpdateCallback)
-        }
+        request.getProxyFragment().obtainFragmentUpdateCallbackManager().add(proxyFragmentUpdateCallback)
     }
 
     override fun onRequestPause(request: Request, reason: Int) {
@@ -57,9 +66,7 @@ internal class PostRequestNode : INode, IRequestStepCallback.Impl() {
 
     override fun onRequestFinish(request: Request) {
         super.onRequestFinish(request)
-        if(request.reCallbackAfterConfigurationChanged){
-            request.getProxyFragment().obtainFragmentUpdateCallbackManager().remove(proxyFragmentUpdateCallback)
-        }
+        request.getProxyFragment().obtainFragmentUpdateCallbackManager().remove(proxyFragmentUpdateCallback)
     }
 
     override fun handle(chain: IChain) {
@@ -88,10 +95,18 @@ internal class PostRequestNode : INode, IRequestStepCallback.Impl() {
             request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
                 callback.onRequestPause(request, REASON_REJECTED_CALLBACK)
             }
-            request.rejectedCallback!!.onRejected(
-                DefaultRejectedProcess(request.linkedChain!!),
-                request.getClonedRejectedPermissions()
-            )
+            try {
+                LogUtil.d(TAG, "callOnRejectedCallback")
+                request.rejectedCallback!!.onRejected(
+                    DefaultRejectedProcess(request.linkedChain!!),
+                    request.getClonedRejectedPermissions()
+                )
+            }catch (e: Exception) {
+                LogUtil.e(TAG, "callOnRejectedCallback: e = $e")
+                request.isInterrupt = true
+                request.linkedChain?.process(request, finish = true)
+                throw e
+            }
             return true
         }
         return false
@@ -102,10 +117,18 @@ internal class PostRequestNode : INode, IRequestStepCallback.Impl() {
             request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
                 callback.onRequestPause(request, REASON_REJECTED_FOREVER_CALLBACK)
             }
-            request.rejectedForeverCallback!!.onRejectedForever(
-                DefaultRejectedForeverProcess(request.linkedChain!!),
-                request.getClonedRejectedForeverPermissions()
-            )
+            try {
+                LogUtil.d(TAG, "callOnRejectedForeverCallback")
+                request.rejectedForeverCallback!!.onRejectedForever(
+                    DefaultRejectedForeverProcess(request.linkedChain!!),
+                    request.getClonedRejectedForeverPermissions()
+                )
+            }catch (e: Exception) {
+                LogUtil.e(TAG, "callOnRejectedForeverCallback: e = $e")
+                request.isInterrupt = true
+                request.linkedChain?.process(request, finish = true)
+                throw e
+            }
             return true
         }
         return false
