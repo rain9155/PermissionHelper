@@ -12,12 +12,13 @@
 
 - [x] 支持特殊权限的申请，申请时和其他权限的申请步骤一样
 - [x] 具有生命周期感应能力，只在界面可见时才发起请求和回调结果
-- [x] 系统配置更改(例如屏幕旋转)后能够恢复之前权限申请流程，不会中断权限申请流程
-- [x] 灵活性高，可以设置请求、拒绝发生时回调，在回调发生时暂停权限申请流程，然后根据用户意愿再决定是否继续权限申请
+- [x] 系统配置更改(例如屏幕旋转)后能够恢复之前权限申请流程，不会中断权限申请流程(有特殊场景，见后面[Other](#Other)说明)
+- [x] 灵活性高，可以设置请求、拒绝发生时回调，在回调发生时暂停权限申请流程，然后根据用户意愿再决定是否继续权限申请流程
+- [x] 已适配到android 11(后台定位权限独立申请、ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION权限申请)
 
 ## Preview
 
-
+![permission](/screenshots/permission.gif)
 
 ## Download
 
@@ -40,18 +41,114 @@ allprojects {
 ```groovy
 dependencies {
     implementation 'io.github.rain9155:permissionhelper:2.0.0'
+    //Permissionhelper还需要依赖appcompat库，版本号多少都可以
+    implementation "androidx.appcompat:appcompat:1.x.x"
 }
 ```
 
 ## How to use ?
 
-### 1、申请权限
+通过`PermissionHelper`的`with`静态方法获取`PermissionHelper`实例，`with`方法支持传入activity或fragment实例，然后拼接`permissions`方法传入要请求的权限，最后拼接`request`方法发起请求，最终在`IResultCallback#onResult`回调中处理授权结果：
 
+```kotlin
+//要请求的权限
+val permissions = listOf(Manifest.permission.CALL_PHONE,Manifest.permission.WRITE_SETTINGS)
 
+//调用PermissionHelper的request方法向用户申请权限
+PermissionHelper.with(this)
+    .permissions(permissions)
+    .request(object : IResultCallback {
+        override fun onResult(isAllGrant: Boolean, grantedPermissions: List<String>, rejectedPermissions: List<String>) {
+            //授权结果回调：
+            //isAllGrant：true时表示用户同意了所有权限，false时表示用户拒绝了某些权限
+            //grantedPermissions：用户同意的权限
+            //rejectedPermissions：用户拒绝的权限
+        }
+    })
+```
 
-### 2、其他操作
+当用户拒绝了某些权限时，应用可能无法继续进行下去，这时我们需要向用户解释被拒绝的权限对应用的必要性，以征得用户再次同意，你可以直接在`IResultCallback#onResult`回调中当isAllGrant为false时弹出弹窗向用户解释原因，然后当用户同意时再次调用`PermissionHelper#request`方法传入要申请的权限再次发起申请，这样会出现回调嵌套的情况，难免会有点不优雅，`PermissionHelper`支持在调用`request`方法前拼接一个`explainAfterRejected`方法，传入`IRejectedCallback`实现，当用户拒绝了某些权限后，`IRejectedCallback#onRejected`方法就会回调，在该回调中，你可以弹出弹窗向用户解释被拒绝的权限对应用的必要性:
 
+```kotlin
+val permissions = listOf(Manifest.permission.CALL_PHONE,Manifest.permission.WRITE_SETTINGS)
 
+PermissionHelper.with(this)
+    .permissions(permissions)
+    .explainAfterRejected(object : IRejectedCallback {
+        override fun onRejected(process: IRejectedCallback.IRejectedProcess, rejectedPermissions: List<String>) {
+            //当用户拒绝了某些权限后, 该回调先于IResultCallback#onResult回调，可以在这里弹出弹窗向用户解释被拒绝的权限对应用的必要性：
+            //process：用户同意再次申请权限时，调用process的相应方法，继续权限申请流程
+            //rejectedPermissions：被用户拒绝的权限
+    }).request(object : IResultCallback {
+        override fun onResult(isAllGrant: Boolean, grantedPermissions: List<String>, rejectedPermissions: List<String>) {
+            //授权结果回调
+        }
+    })
+```
+
+`IRejectedCallback#onRejected`回调中的process参数是`IRejectedProcess`类型，它里面只有两个方法：`IRejectedProcess#requestAgain`方法和`IRejectedProcess#requestTermination`方法，用户同意再次申请权限时调用`IRejectedProcess#requestAgain`方法传入继续申请的权限恢复权限申请流程，当用户不同意再次申请权限时，调用`IRejectedProcess#requestTermination`方法终止权限的申请流程，紧接着`IResultCallback#onResult`就会回调，可以在里面做最终的结果处理，如果用户同意再次申请权限，但在二次权限申请的过程中勾选了**不再询问选项**(android 11后连续点击两次拒绝等同于勾选了Dont Ask again)，那么该权限就会被用户**永久拒绝**，下一次请求时不会出现该权限的申请框，针对这种情况，我们需要引导用户到设置界面同意该权限，`PermissionHelper`支持在调用`request`方法前拼接一个`explainAfterRejectedForever`方法，传入`IRejectedForeverCallback`实现，当用户永久拒绝了某些权限后，`IRejectedForeverCallback#onRejectedForever`方法就会回调，在该回调中，你可以弹出弹窗再次向用户解释被拒绝的权限对应用的必要性：
+
+```kotlin
+val permissions = listOf(Manifest.permission.CALL_PHONE,Manifest.permission.WRITE_SETTINGS)
+
+PermissionHelper.with(this)
+    .permissions(permissions)
+    .explainAfterRejected(object : IRejectedCallback {
+        override fun onRejected(process: IRejectedCallback.IRejectedProcess, rejectedPermissions: List<String>) {
+           //当用户 第一次拒绝 了某些权限后, 该回调先于IResultCallback#onResult回调，可以在这里弹出弹窗向用户解释被拒绝的权限对应用的必要性
+        }
+    }).explainAfterRejectedForever(object : IRejectedForeverCallback {
+        override fun onRejectedForever(process: IRejectedForeverCallback.IRejectedForeverProcess, rejectedForeverPermissions: List<String>) {
+            //当用户 永久拒绝 了某些权限后, 该回调先于IResultCallback#onResult回调，可以在这里弹出弹窗向用户解释被拒绝的权限对应用的必要性
+            //process：用户同意去设置界面时，调用process的相应方法，继续权限申请流程
+            //rejectedForeverPermissions：被用户永久拒绝的权限
+        }
+    }).request(object : IResultCallback {
+        override fun onResult(isAllGrant: Boolean, grantedPermissions: List<String>, rejectedPermissions: List<String>) {
+            //授权结果回调
+        }
+    })
+```
+
+`IRejectedForeverCallback#onRejectedForever`回调中的process参数是`IRejectedForeverProcess`类型，它里面只有两个方法：`IRejectedForeverProcess#gotoSettings`方法和`IRejectedForeverProcess#requestTermination`方法，当用户同意去设置界面时调用`IRejectedForeverProcess#gotoSettings`方法前往设置页面，当用户不同意时，调用`IRejectedForeverProcess#requestTermination`方法终止权限的申请流程，紧接着`IResultCallback#onResult`就会回调，可以在里面做最终的结果处理，除了在权限被拒绝后向用户解释原因，`PermissionHelper`还支持在权限发起申请前向用户解释原因，这样用户后续同意的意愿更大，向前面一样，`PermissionHelper`可以在调用`request`方法前拼接一个`explainBeforeRequest`方法，传入`IRequestCallback`实现，当请求发起前，`IRequestCallback#onRequest`方法就会回调，在该回调中，你可以弹出弹窗向用户解释要申请的权限对应用的必要性：
+
+```kotlin
+val permissions = listOf(Manifest.permission.CALL_PHONE,Manifest.permission.WRITE_SETTINGS)
+
+PermissionHelper.with(this)
+    .permissions(permissions)
+    ..explainBeforeRequest(object : IRequestCallback {
+        override fun onRequest(process: IRequestCallback.IRequestProcess, requestPermissions: List<String>) {
+            //当 发起 权限请求前，该回调先于后面所有回调回调，可以在这里弹出弹窗向用户解释要申请的权限对应用的必要性
+            //process：用户同意后，调用process的相应方法，继续权限申请流程
+            //requestPermissions：即将要请求的权限(不包含已经被授予的权限, requestPermissions <= permissions)
+        }
+    }).explainAfterRejected(object : IRejectedCallback {
+        override fun onRejected(process: IRejectedCallback.IRejectedProcess, rejectedPermissions: List<String>) {
+           //当用户 第一次拒绝 了某些权限后, 该回调先于IResultCallback#onResult回调，可以在这里弹出弹窗向用户解释被拒绝的权限对应用的必要性
+        }
+    }).explainAfterRejectedForever(object : IRejectedForeverCallback {
+        override fun onRejectedForever(process: IRejectedForeverCallback.IRejectedForeverProcess, rejectedForeverPermissions: List<String>) {
+            //当用户 永久拒绝 了某些权限后, 该回调先于IResultCallback#onResult回调，可以在这里弹出弹窗向用户解释被拒绝的权限对应用的必要性
+        }
+    }).request(object : IResultCallback {
+        override fun onResult(isAllGrant: Boolean, grantedPermissions: List<String>, rejectedPermissions: List<String>) {
+            //授权结果回调
+        }
+    })
+```
+
+`IRequestCallback#onRequest`回调中的process参数是`IRequestProcess`类型，它里面只有两个方法：`IRequestProcess#requestContinue`方法和`IRequestProcess#requestTermination`方法，这两个方法的调用场景和前面讲过的rejected回调一样，就不再累述了。
+
+## Other
+
+上面就是`PermissionHelper`的基本使用方法，但是在权限申请中还有一些特殊场景会导致权限请求流程被中断，这些都是无法避免的，需要另外说明：
+
+1、前往设置页面拒绝某些权限返回后，app进程会销毁重建，这时使用`PermissionHelper`进行的权限请求流程就会被中断，这是因为在进程被重建了，`PermissionHelper`保存的数据无法被恢复，不过这也是系统的行为，`PermissionHelper`也无法避免，但是我们可以针对这种情况作出一些优化，参考[Android在应用设置里关闭权限，返回生命周期处理](https://www.jianshu.com/p/cb68ca511776)，我们可以在权限请求的页面中通过savedInstanceState判断app进程是否被重建，如果app进程被重建了，我们就直接回到app的启动页；
+
+2、android 11后申请安装外部来源应用权限后，app进程会销毁重建，这时使用`PermissionHelper`进行的权限请求流程就会被中断，原因和1一样，解决办法也可以参考1，对于android 11这个行为变更可以参考[Android 11特性调整：安装外部来源应用需要重启APP](https://cloud.tencent.com/developer/news/637591)；
+
+3、`PermissionHelper`在系统配置变更后(例如屏幕旋转)也可以恢复之前的权限请求流程，如果你设置了`explainBeforeRequest`、`explainAfterRejected`或`explainAfterRejectedForever`回调，需要你在回调发生时调用对应`IProcess`的方法才可以继续权限请求流程，否则就会中断权限的请求流程，同时如果当回调发生时恰好发生系统配置变更，那么回调中与用户交互的部分就会丢失，例如你在回调中弹出了一个弹窗向用户解释权限申请原因，需要用户点击弹窗的确定或取消按钮才会继续调用`IProcess`的相应方法，那么当系统配置发生变更后，弹窗就会消失，这时用户就没法点击弹窗相应按钮，就会由于没有调用`IProcess`的相应方法中断权限的申请流程，所以`PermissionHelper`针对这种情况，支持当系统配置变更后再次回调相应的回调，从而恢复权限申请流程，如果不需要，可以在调用`request`方法前拼接`reCallbackAfterConfigurationChanged`方法传入false，默认为true.
 
 ## License
 
