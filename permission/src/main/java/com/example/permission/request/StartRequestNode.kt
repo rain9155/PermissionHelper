@@ -14,10 +14,10 @@ import java.lang.Exception
  * 权限请求的前置处理
  * Created by 陈健宇 at 2021/8/16
  */
-internal class PreRequestNode : INode, IRequestStepCallback.Impl() {
+internal class StartRequestNode : INode, IRequestStepCallback.Impl() {
 
     companion object{
-        private const val TAG = "PreRequestNode"
+        private const val TAG = "StartRequestNode"
     }
 
     private var pauseReason = -1
@@ -74,6 +74,8 @@ internal class PreRequestNode : INode, IRequestStepCallback.Impl() {
         val result = PermissionUtil.checkPermissions(request.getActivity(), request.getClonedRequestPermissions())
         request.requestPermissions = result.first
         request.grantedPermissions.addAll(result.second)
+
+        LogUtil.d(TAG, "handle: request = $request")
 
         if(!callOnRequestCallback(request)) {
             chain.process(request)

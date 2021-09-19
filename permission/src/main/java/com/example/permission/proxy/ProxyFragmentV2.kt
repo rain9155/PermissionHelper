@@ -92,7 +92,10 @@ internal class ProxyFragmentV2 : AbsProxyFragment<ProxyFragmentV2ViewModel>(){
             permissionResultCallbacks.remove(requestCode)
             val permissionResults = ArrayList<PermissionResult>(permissions.size)
             grantResults.forEachIndexed{ index, grantResult ->
-                permissionResults.add(PermissionResult(permissions[index], grantResult, SpecialUtil.isSpecialPermission(permissions[index])))
+                val permission = permissions[index]
+                val special = SpecialUtil.isSpecialPermission(permission)
+                val should = PermissionUtil.checkShouldShowRationale(requestActivity(), permission)
+                permissionResults.add(PermissionResult(permission, grantResult, special, should))
             }
             callback.onPermissionResults(permissionResults)
         }

@@ -61,7 +61,11 @@ internal class RequestNormalNode : INode {
                     if(result.granted){
                         request.grantedPermissions.add(result.name)
                     }else{
-                        request.rejectedPermissions.add(result.name)
+                        if(result.shouldShowRationale) {
+                            request.rejectedPermissions.add(result.name)
+                        }else {
+                            request.rejectedForeverPermissions.add(result.name)
+                        }
                     }
                     request.requestPermissions.remove(result.name)
                 }

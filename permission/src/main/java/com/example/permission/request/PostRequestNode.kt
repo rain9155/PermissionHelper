@@ -77,13 +77,7 @@ internal class PostRequestNode : INode, IRequestStepCallback.Impl() {
             request.requestPermissions.clear()
         }
 
-        val rejectedPermissions = request.getClonedRejectedPermissions()
-        rejectedPermissions.forEach { permission ->
-            if(!PermissionUtil.checkShouldShowRationale(request.getActivity(), permission)){
-                request.rejectedPermissions.remove(permission)
-                request.rejectedForeverPermissions.add(permission)
-            }
-        }
+        LogUtil.d(TAG, "handle: request = $request")
 
         if(!callOnRejectedCallback(request) && !callOnRejectedForeverCallback(request)) {
             chain.process(request)

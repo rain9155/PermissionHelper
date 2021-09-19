@@ -48,9 +48,9 @@ internal class DefaultRejectedForeverProcess(private val chain: IChain) : IRejec
                     }else{
                         if(!granted){
                             request.grantedPermissions.remove(permission)
-                            if(PermissionUtil.checkShouldShowRationale(request.getActivity(), permission)){
+                            if(result.shouldShowRationale) {
                                 request.rejectedPermissions.add(permission)
-                            }else{
+                            }else {
                                 request.rejectedForeverPermissions.add(permission)
                             }
                         }

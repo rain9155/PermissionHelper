@@ -15,7 +15,7 @@ interface IResultCallback {
      *                            3、系统版本小于android 6.0
      * @param rejectedPermissions 申请失败的权限, 有两种情况：
      *                            1、用户在授权弹窗点击拒绝授权此权限
-     *                            2、用户在授权弹窗点击拒绝授权此权限，并勾选了don’t ask again(android 11之后用户连续两次点击拒绝授权等同于don’t ask again)
+     *                            2、用户在授权弹窗点击拒绝授权此权限，并勾选了don’t ask again(android 11之后用户连续点击多次拒绝授权等同于don’t ask again)
      */
     fun onResult(isAllGrant: Boolean, grantedPermissions: List<String>, rejectedPermissions: List<String>)
 

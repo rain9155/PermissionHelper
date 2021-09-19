@@ -3,7 +3,6 @@ package com.example.permission.base
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
-import com.example.permission.proxy.ProxyFragmentProvider
 
 /**
  * 内部统一权限回调处理、接口定义
@@ -16,7 +15,8 @@ import com.example.permission.proxy.ProxyFragmentProvider
 internal data class PermissionResult(
     val name: String,
     val granted: Boolean,
-    val special: Boolean = false
+    val special: Boolean = false,
+    val shouldShowRationale: Boolean = false
 )
 
 /**

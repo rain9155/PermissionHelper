@@ -39,13 +39,25 @@ class PermissionHelper private constructor(private val fragmentProvider: ProxyFr
         }
 
         /**
-         * 检查权限是否被授予
+         * 检查单个权限是否被授予
          * @param context 上下文
          * @param permission 要检查的权限名
+         * @return true为被授予
          */
         @JvmStatic
         fun checkPermission(context: Context, permission: String): Boolean {
             return PermissionUtil.checkPermission(context, permission)
+        }
+
+        /**
+         * 检查多个权限是否被授予
+         * @param context 上下文
+         * @param permissions 要检查的权限列表
+         * @return 返回还未被授予的权限列表，如果返回的列表为empty，说明传进的所有权限都被授予了
+         */
+        @JvmStatic
+        fun checkPermissions(context: Context, permissions: List<String>): List<String> {
+            return PermissionUtil.checkPermissions(context, permissions).first
         }
 
         /**

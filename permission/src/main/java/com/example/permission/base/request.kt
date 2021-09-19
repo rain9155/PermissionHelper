@@ -137,7 +137,7 @@ internal data class Request(
 
     override fun onRequestStart(request: Request) {
         super.onRequestStart(request)
-        LogUtil.d(TAG, "onRequestStart: request = $request")
+        LogUtil.d(TAG, "onRequestStart")
     }
 
     override fun onRequestPermissions(request: Request, permissions: List<String>) {
@@ -157,7 +157,7 @@ internal data class Request(
 
     override fun onRequestFinish(request: Request) {
         super.onRequestFinish(request)
-        LogUtil.d(TAG, "onRequestFinish: request = $request")
+        LogUtil.d(TAG, "onRequestFinish")
     }
 
     fun getProxyFragment(): IProxyFragment{
