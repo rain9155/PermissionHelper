@@ -14,7 +14,7 @@
 - [x] 具有生命周期感应能力，只在界面可见时才发起请求和回调结果
 - [x] 系统配置更改(例如屏幕旋转)后能够恢复之前权限申请流程，不会中断权限申请流程(有特殊场景，见后面[Other](#Other)说明)
 - [x] 灵活性高，可以设置请求、拒绝发生时回调，在回调发生时暂停权限申请流程，然后根据用户意愿再决定是否继续权限申请流程
-- [x] 已适配到android 11(后台定位权限独立申请、ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION权限申请)
+- [x] 已适配到android 11(后台定位权限独立申请、MANAGE_EXTERNAL_STORAGE权限申请)
 
 ## Preview
 
@@ -22,7 +22,7 @@
 
 ## Download
 
-
+[点击下载查看示例](https://github.com/rain9155/PermissionHelper/raw/update/app/apk/app-debug.apk)
 
 ## How to install ？
 
@@ -86,7 +86,7 @@ PermissionHelper.with(this)
     })
 ```
 
-`IRejectedCallback#onRejected`回调中的process参数是`IRejectedProcess`类型，它里面只有两个方法：`IRejectedProcess#requestAgain`方法和`IRejectedProcess#requestTermination`方法，用户同意再次申请权限时调用`IRejectedProcess#requestAgain`方法传入继续申请的权限恢复权限申请流程，当用户不同意再次申请权限时，调用`IRejectedProcess#requestTermination`方法终止权限的申请流程，紧接着`IResultCallback#onResult`就会回调，可以在里面做最终的结果处理，如果用户同意再次申请权限，但在二次权限申请的过程中勾选了**不再询问选项**(android 11后连续点击两次拒绝等同于勾选了Dont Ask again)，那么该权限就会被用户**永久拒绝**，下一次请求时不会出现该权限的申请框，针对这种情况，我们需要引导用户到设置界面同意该权限，`PermissionHelper`支持在调用`request`方法前拼接一个`explainAfterRejectedForever`方法，传入`IRejectedForeverCallback`实现，当用户永久拒绝了某些权限后，`IRejectedForeverCallback#onRejectedForever`方法就会回调，在该回调中，你可以弹出弹窗再次向用户解释被拒绝的权限对应用的必要性：
+`IRejectedCallback#onRejected`回调中的process参数是`IRejectedProcess`类型，它里面只有两个方法：`IRejectedProcess#requestAgain`方法和`IRejectedProcess#requestTermination`方法，用户同意再次申请权限时调用`IRejectedProcess#requestAgain`方法传入继续申请的权限恢复权限申请流程，当用户不同意再次申请权限时，调用`IRejectedProcess#requestTermination`方法终止权限的申请流程，紧接着`IResultCallback#onResult`就会回调，可以在里面做最终的结果处理，如果用户同意再次申请权限，但在二次权限申请的过程中勾选了**不再询问选项**(android 11后连续点击多次拒绝等同于勾选了Dont Ask again)，那么该权限就会被用户**永久拒绝**，下一次请求时不会出现该权限的申请框，针对这种情况，我们需要引导用户到设置界面同意该权限，`PermissionHelper`支持在调用`request`方法前拼接一个`explainAfterRejectedForever`方法，传入`IRejectedForeverCallback`实现，当用户永久拒绝了某些权限后，`IRejectedForeverCallback#onRejectedForever`方法就会回调，在该回调中，你可以弹出弹窗再次向用户解释被拒绝的权限对应用的必要性：
 
 ```kotlin
 val permissions = listOf(Manifest.permission.CALL_PHONE,Manifest.permission.WRITE_SETTINGS)
@@ -139,6 +139,23 @@ PermissionHelper.with(this)
 ```
 
 `IRequestCallback#onRequest`回调中的process参数是`IRequestProcess`类型，它里面只有两个方法：`IRequestProcess#requestContinue`方法和`IRequestProcess#requestTermination`方法，这两个方法的调用场景和前面讲过的rejected回调一样，就不再累述了。
+
+除此之外PermissionHelper还提供了一些跟权限相关的工具方法：
+
+```kotlin
+//检查单个权限是否被授予，返回boolean值
+val isGrant = PermissionHelper.checkPermission(this, Manifest.permission.CALL_PHONE)
+
+//检查多个权限是否被授予，返回还未被授予的权限列表，如果返回的列表为empty，说明传进的所有权限都被授予了
+val permissions = listOf(Manifest.permission.CALL_PHONE,Manifest.permission.WRITE_SETTINGS, Manifest.permission.SYSTEM_ALERT_WINDOW)
+val rejectedPermissions = PermissionHelper.checkPermissions(this, permissions)
+
+//跳转到不同厂商的权限设置界面，如果跳转失败(不支持的厂商)，则跳转到应用详情页
+PermissionHelper.gotoSettings(this)
+
+//跳转到不同厂商的权限设置界面，如果跳转失败(不支持的厂商)，则跳转到应用详情页, 可以传入requestCode，须自己在activity中重写onActivityResult，根据requestCode再次检查权限
+PermissionHelper.gotoSettings(this, requestCode = 0x001)
+```
 
 ## Other
 
