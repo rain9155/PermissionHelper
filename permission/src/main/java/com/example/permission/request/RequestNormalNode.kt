@@ -22,58 +22,21 @@ internal class RequestNormalNode : INode {
         private const val TAG = "RequestNormalNode"
     }
 
-    private var backgroundLocationPermission: String? = null
-
     override fun handle(chain: IChain) {
         val request = chain.getRequest()
 
-        val normalPermissions = ArrayList<String>()
-        request.requestPermissions.forEach {permission ->
-            if(!SpecialUtil.isSpecialPermission(permission)){
-                normalPermissions.add(permission)
-            }
+        val normalPermissions = request.requestPermissions.filter { permission ->
+            !SpecialUtil.isSpecialPermission(permission)
         }
 
-        if(TextUtils.isEmpty(backgroundLocationPermission)){
-            backgroundLocationPermission = normalPermissions.find { permission ->
-                Manifest.permission.ACCESS_BACKGROUND_LOCATION == permission
-            }
-        }
-        normalPermissions.remove(backgroundLocationPermission)
-
-        if(normalPermissions.isNotEmpty()){
-            requestNormalPermissions(chain, request, normalPermissions)
-        }else if(!TextUtils.isEmpty(backgroundLocationPermission)){
-            requestNormalPermissions(chain, request, listOf(backgroundLocationPermission!!))
-            backgroundLocationPermission = null
-        }else{
-            chain.process(request)
-        }
-    }
-
-    private fun requestNormalPermissions(chain: IChain, request: Request, normalPermissions: List<String>){
         request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
             callback.onRequestPermissions(request, normalPermissions)
         }
+
         request.getProxyFragment().requestNormalPermissions(normalPermissions, object : IPermissionResultsCallback {
             override fun onPermissionResults(permissionResults: List<PermissionResult>) {
-                permissionResults.forEach {result ->
-                    if(result.granted){
-                        request.grantedPermissions.add(result.name)
-                    }else{
-                        if(result.shouldShowRationale) {
-                            request.rejectedPermissions.add(result.name)
-                        }else {
-                            request.rejectedForeverPermissions.add(result.name)
-                        }
-                    }
-                    request.requestPermissions.remove(result.name)
-                }
-                if(!TextUtils.isEmpty(backgroundLocationPermission)){
-                    chain.process(request, again = true)
-                }else{
-                    chain.process(request)
-                }
+                request.divisionRequestPermissionsByPermissionResults(permissionResults)
+                chain.process(request)
             }
         })
     }

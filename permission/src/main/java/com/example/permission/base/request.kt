@@ -187,6 +187,24 @@ internal data class Request(
     fun getRequestStepCallbackManager(): IRequestStepCallbackManager {
         return requestStepCallbackManager
     }
+
+    fun divisionRequestPermissionsByPermissionResults(permissionResults: List<PermissionResult>) {
+        if(permissionResults.isNullOrEmpty()) {
+            return
+        }
+        permissionResults.forEach {result ->
+            if(result.granted){
+                grantedPermissions.add(result.name)
+            }else{
+                if(result.shouldShowRationale) {
+                    rejectedPermissions.add(result.name)
+                }else {
+                    rejectedForeverPermissions.add(result.name)
+                }
+            }
+            requestPermissions.remove(result.name)
+        }
+    }
 }
 
 /**

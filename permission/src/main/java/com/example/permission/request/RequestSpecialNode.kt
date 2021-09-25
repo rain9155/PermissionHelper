@@ -21,11 +21,8 @@ internal class RequestSpecialNode : INode {
     override fun handle(chain: IChain) {
         val request = chain.getRequest()
 
-        val specialPermissions = ArrayList<String>()
-        request.requestPermissions.forEach {permission ->
-            if(SpecialUtil.isSpecialPermission(permission)){
-                specialPermissions.add(permission)
-            }
+        val specialPermissions = request.requestPermissions.filter {permission ->
+            SpecialUtil.isSpecialPermission(permission)
         }
 
         request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
@@ -34,18 +31,7 @@ internal class RequestSpecialNode : INode {
 
         request.getProxyFragment().requestSpecialPermissions(specialPermissions, object : IPermissionResultsCallback {
             override fun onPermissionResults(permissionResults: List<PermissionResult>) {
-                permissionResults.forEach {result ->
-                    if(result.granted){
-                        request.grantedPermissions.add(result.name)
-                    }else{
-                        if(result.shouldShowRationale) {
-                            request.rejectedPermissions.add(result.name)
-                        }else {
-                            request.rejectedForeverPermissions.add(result.name)
-                        }
-                    }
-                    request.requestPermissions.remove(result.name)
-                }
+                request.divisionRequestPermissionsByPermissionResults(permissionResults)
                 chain.process(request)
             }
         })

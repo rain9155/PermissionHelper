@@ -6,11 +6,13 @@ import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
-import com.example.permission.PermissionHelper
+import androidx.core.content.ContextCompat
+import com.example.permission.base.PERMISSION_LOCATION_PROVIDER
 
 /**
  * 统一管理各种特殊权限的工具类
@@ -19,12 +21,14 @@ import com.example.permission.PermissionHelper
 internal object SpecialUtil {
 
     private const val TAG = "SpecialUtil"
+
     private val specialPermissions = listOf(
         Manifest.permission.WRITE_SETTINGS,//允许应用修改系统设置
         Manifest.permission.SYSTEM_ALERT_WINDOW,//允许应用显示在其他应用上面
         Manifest.permission.REQUEST_INSTALL_PACKAGES,//允许应用安装未知来源应用
         Manifest.permission.PACKAGE_USAGE_STATS,//允许应用收集其他应用的使用信息
-        Manifest.permission.MANAGE_EXTERNAL_STORAGE//允许应用访问作用域存储(scoped storage)中的外部存储
+        Manifest.permission.MANAGE_EXTERNAL_STORAGE,//允许应用访问作用域存储(scoped storage)中的外部存储
+        PERMISSION_LOCATION_PROVIDER//对[Manifest.permission_group.LOCATION]权限组的权限的特殊处理
     )
 
     /**
@@ -54,6 +58,9 @@ internal object SpecialUtil {
             }
             Manifest.permission.MANAGE_EXTERNAL_STORAGE -> {
                 Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
+            }
+            PERMISSION_LOCATION_PROVIDER -> {
+                Settings.ACTION_LOCATION_SOURCE_SETTINGS
             }
             else ->{
                 LogUtil.d(TAG, "getIntent: unknown special permission, permission = $permission")
@@ -109,9 +116,17 @@ internal object SpecialUtil {
                     Environment.isExternalStorageManager()
                 }
             }
+            PERMISSION_LOCATION_PROVIDER -> {
+                val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+                    locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) or locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+                }else {
+                    locationManager.isLocationEnabled
+                }
+            }
             else ->{
                 LogUtil.d(TAG, "checkPermission: unknown special permission, permission = $permission")
-                false
+                ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
             }
         }
     }

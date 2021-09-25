@@ -12,3 +12,5 @@ internal const val VERSION_V2 = 0x0002
 internal const val REASON_REQUEST_CALLBACK = 0x0011
 internal const val REASON_REJECTED_CALLBACK = 0x0012
 internal const val REASON_REJECTED_FOREVER_CALLBACK = 0x0013
+
+internal const val PERMISSION_LOCATION_PROVIDER = "com.example.permission.LOCATION_PROVIDER"

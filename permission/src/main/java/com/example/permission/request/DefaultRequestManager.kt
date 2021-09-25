@@ -56,6 +56,7 @@ internal class DefaultRequestManager private constructor() : IRequestManager {
             }
             val interceptors = listOf(
                 StartRequestNode().apply { originalRequest.getRequestStepCallbackManager().add(this) },
+                RequestLocationNode(),
                 RequestNormalNode(),
                 RequestSpecialNode(),
                 PostRequestNode().apply { originalRequest.getRequestStepCallbackManager().add(this) },

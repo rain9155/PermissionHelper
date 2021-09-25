@@ -1,7 +1,9 @@
 package com.example.permission
 
 import android.app.Activity
+import android.app.AppOpsManager
 import android.content.Context
+import android.os.Build
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.example.permission.base.IRequestManager
@@ -10,6 +12,7 @@ import com.example.permission.proxy.ProxyFragmentProvider
 import com.example.permission.request.DefaultRequestManager
 import com.example.permission.utils.PermissionUtil
 import com.example.permission.utils.SettingsUtil
+import java.lang.IllegalArgumentException
 import kotlin.collections.LinkedHashSet
 
 /**
@@ -26,6 +29,7 @@ class PermissionHelper private constructor(private val fragmentProvider: ProxyFr
          */
         @JvmStatic
         fun with(activity: FragmentActivity): PermissionHelper {
+            checkTargetSdkApi(activity)
             return PermissionHelper(ProxyFragmentProvider(activity))
         }
 
@@ -35,6 +39,7 @@ class PermissionHelper private constructor(private val fragmentProvider: ProxyFr
          */
         @JvmStatic
         fun with(fragment: Fragment): PermissionHelper {
+            checkTargetSdkApi(fragment.requireContext())
             return PermissionHelper(ProxyFragmentProvider(fragment))
         }
 
@@ -46,6 +51,7 @@ class PermissionHelper private constructor(private val fragmentProvider: ProxyFr
          */
         @JvmStatic
         fun checkPermission(context: Context, permission: String): Boolean {
+            checkTargetSdkApi(context)
             return PermissionUtil.checkPermission(context, permission)
         }
 
@@ -57,6 +63,7 @@ class PermissionHelper private constructor(private val fragmentProvider: ProxyFr
          */
         @JvmStatic
         fun checkPermissions(context: Context, permissions: List<String>): List<String> {
+            checkTargetSdkApi(context)
             return PermissionUtil.checkPermissions(context, permissions).first
         }
 
@@ -68,9 +75,18 @@ class PermissionHelper private constructor(private val fragmentProvider: ProxyFr
         @JvmStatic
         @JvmOverloads
         fun gotoSettings(activity: Activity, requestCode: Int = 0x9155) {
+            checkTargetSdkApi(activity)
             activity.startActivityForResult(SettingsUtil.getIntent(activity), requestCode)
         }
 
+        /**
+         * 使用PermissionHelper的应用的targetSdkVersion要大于等于[Build.VERSION_CODES.M], 不兼容[AppOpsManager]逻辑
+         */
+        private fun checkTargetSdkApi(context: Context) {
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context.applicationInfo.targetSdkVersion < Build.VERSION_CODES.M) {
+                throw InstantiationException("PermissionHelper only supports application with targetSdkVersion greater than or equal to 23, please upgrade the targetSdkVersion of the application")
+            }
+        }
     }
 
     private var requestPermissions = LinkedHashSet<String>()
