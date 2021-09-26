@@ -30,17 +30,20 @@ internal class RequestLocationNode : INode {
 
     override fun handle(chain: IChain) {
         val request = chain.getRequest()
+        if(!request.isRejectRequest) {
+            val locationPermissions = request.requestPermissions.filter { permission ->
+                locationGroup.contains(permission)
+            }.toMutableList()
 
-        val locationPermissions = request.requestPermissions.filter { permission ->
-            locationGroup.contains(permission)
-        }.toMutableList()
-
-        if(locationPermissions.isNotEmpty()) {
-            backgroundLocationPermission = locationPermissions.find { permission ->
-                Manifest.permission.ACCESS_BACKGROUND_LOCATION == permission
+            if(locationPermissions.isNotEmpty()) {
+                backgroundLocationPermission = locationPermissions.find { permission ->
+                    Manifest.permission.ACCESS_BACKGROUND_LOCATION == permission
+                }
+                locationPermissions.remove(backgroundLocationPermission)
+                requestLocationPermissions(chain, request, locationPermissions)
+            }else {
+                chain.process(request)
             }
-            locationPermissions.remove(backgroundLocationPermission)
-            requestLocationPermissions(chain, request, locationPermissions)
         }else {
             chain.process(request)
         }

@@ -29,6 +29,7 @@ internal class DefaultRejectedForeverProcess(private val chain: IChain) : IRejec
         request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
             callback.onRequestResume(request, REASON_REJECTED_FOREVER_CALLBACK)
         }
+        request.isRejectRequest = false
         request.rejectedForeverCallback = null
         request.getProxyFragment().gotoSettingsForCheckResults(permissions, object : IPermissionResultsCallback{
             override fun onPermissionResults(permissionResults: List<PermissionResult>) {
@@ -61,12 +62,13 @@ internal class DefaultRejectedForeverProcess(private val chain: IChain) : IRejec
         })
     }
 
-    override fun requestTermination() {
-        LogUtil.d(TAG, "requestTermination")
+    override fun rejectRequest() {
+        LogUtil.d(TAG, "rejectRequest")
         val request = chain.getRequest()
         request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
             callback.onRequestResume(request, REASON_REJECTED_FOREVER_CALLBACK)
         }
+        request.isRejectRequest = true
         request.rejectedForeverCallback = null
         chain.process(request, finish  = true)
     }

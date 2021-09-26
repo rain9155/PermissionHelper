@@ -31,7 +31,7 @@ internal class DefaultRequestManager private constructor() : IRequestManager {
         )
         LogUtil.d(TAG, "startRequest: requestKey = $requestKey")
         val preRequest = requests[requestKey]
-        if(preRequest != null && !preRequest.isInterrupt && !preRequest.isFinish){
+        if(preRequest != null && !preRequest.isFinish){
             preRequest.run {
                 requestCallback = request.requestCallback
                 rejectedCallback = request.rejectedCallback

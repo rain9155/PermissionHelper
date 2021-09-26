@@ -21,17 +21,19 @@ internal class DefaultRequestProcess(private val chain: IChain) : IRequestCallba
         request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
             callback.onRequestResume(request, REASON_REQUEST_CALLBACK)
         }
+        request.isRejectRequest = false
         request.requestCallback = null
         chain.process(request)
     }
 
-    override fun requestTermination() {
-        LogUtil.d(TAG, "requestTermination")
+    override fun rejectRequest() {
+        LogUtil.d(TAG, "rejectRequest")
         val request = chain.getRequest()
         request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
             callback.onRequestResume(request, REASON_REQUEST_CALLBACK)
         }
+        request.isRejectRequest = true
         request.requestCallback = null
-        chain.process(request, finish = true)
+        chain.process(request)
     }
 }

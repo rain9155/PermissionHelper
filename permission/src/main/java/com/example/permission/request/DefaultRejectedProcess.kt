@@ -29,16 +29,18 @@ internal class DefaultRejectedProcess(private val chain: IChain) : IRejectedCall
         request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
             callback.onRequestResume(request, REASON_REJECTED_CALLBACK)
         }
+        request.isRejectRequest = false
         request.rejectedCallback = null
         chain.process(request, restart = true)
     }
 
-    override fun requestTermination() {
-        LogUtil.d(TAG, "requestTermination")
+    override fun rejectRequest() {
+        LogUtil.d(TAG, "rejectRequest")
         val request = chain.getRequest()
         request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
             callback.onRequestResume(request, REASON_REJECTED_CALLBACK)
         }
+        request.isRejectRequest = true
         request.rejectedCallback = null
         chain.process(chain.getRequest(), again = true)
     }

@@ -24,14 +24,14 @@ internal class FinishRequestNode : INode {
 
         DefaultRequestManager.instance.finishRequest(request.requestKey)
 
-        if(!request.isInterrupt && request.requestPermissions.isNotEmpty()){
+        if(request.requestPermissions.isNotEmpty()){
             request.rejectedPermissions.addAll(request.requestPermissions)
             request.requestPermissions.clear()
         }
 
         LogUtil.d(TAG, "handle: request = $request")
 
-        if(!request.isInterrupt && request.resultCallback != null){
+        if(request.resultCallback != null){
             val grantedPermissions = request.getClonedGrantedPermissions()
             val rejectedPermissions = ArrayList<String>(request.rejectedPermissions.size + request.rejectedForeverPermissions.size).apply {
                 addAll(request.rejectedPermissions)

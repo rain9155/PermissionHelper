@@ -7,8 +7,8 @@ package com.example.permission
 interface IProcess {
 
     /**
-     * 当终止申请流程时，调用该方法
+     * 当用户拒绝继续申请时，调用该方法
      */
-    fun requestTermination()
+    fun rejectRequest()
 
 }

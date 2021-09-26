@@ -32,15 +32,13 @@ internal class PostRequestNode : INode, IRequestStepCallback.Impl() {
                     if(request.reCallbackAfterConfigurationChanged) {
                         callOnRejectedCallback(request)
                     }else {
-                        request.isInterrupt = true
-                        request.linkedChain?.process(request, finish = true)
+                        DefaultRequestManager.instance.finishRequest(request.requestKey)
                     }
                 }else if(pauseReason == REASON_REJECTED_FOREVER_CALLBACK) {
                     if(request.reCallbackAfterConfigurationChanged) {
                         callOnRejectedForeverCallback(request)
                     }else {
-                        request.isInterrupt = true
-                        request.linkedChain?.process(request, finish = true)
+                        DefaultRequestManager.instance.finishRequest(request.requestKey)
                     }
                 }
             }
@@ -97,8 +95,7 @@ internal class PostRequestNode : INode, IRequestStepCallback.Impl() {
                 )
             }catch (e: Exception) {
                 LogUtil.e(TAG, "callOnRejectedCallback: e = $e")
-                request.isInterrupt = true
-                request.linkedChain?.process(request, finish = true)
+                DefaultRequestManager.instance.finishRequest(request.requestKey)
                 throw e
             }
             return true
@@ -119,8 +116,7 @@ internal class PostRequestNode : INode, IRequestStepCallback.Impl() {
                 )
             }catch (e: Exception) {
                 LogUtil.e(TAG, "callOnRejectedForeverCallback: e = $e")
-                request.isInterrupt = true
-                request.linkedChain?.process(request, finish = true)
+                DefaultRequestManager.instance.finishRequest(request.requestKey)
                 throw e
             }
             return true

@@ -31,8 +31,7 @@ internal class StartRequestNode : INode, IRequestStepCallback.Impl() {
                     if(request.reCallbackAfterConfigurationChanged){
                         callOnRequestCallback(request)
                     }else{
-                        request.isInterrupt = true
-                        request.linkedChain?.process(request, finish = true)
+                        DefaultRequestManager.instance.finishRequest(request.requestKey)
                     }
                 }
             }
@@ -95,8 +94,7 @@ internal class StartRequestNode : INode, IRequestStepCallback.Impl() {
                 )
             }catch (e: Exception) {
                 LogUtil.e(TAG, "callOnRequestCallback: e = $e")
-                request.isInterrupt = true
-                request.linkedChain?.process(request, finish = true)
+                DefaultRequestManager.instance.finishRequest(request.requestKey)
                 throw e
             }
             return true

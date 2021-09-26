@@ -24,21 +24,24 @@ internal class RequestNormalNode : INode {
 
     override fun handle(chain: IChain) {
         val request = chain.getRequest()
-
-        val normalPermissions = request.requestPermissions.filter { permission ->
-            !SpecialUtil.isSpecialPermission(permission)
-        }
-
-        request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
-            callback.onRequestPermissions(request, normalPermissions)
-        }
-
-        request.getProxyFragment().requestNormalPermissions(normalPermissions, object : IPermissionResultsCallback {
-            override fun onPermissionResults(permissionResults: List<PermissionResult>) {
-                request.divisionRequestPermissionsByPermissionResults(permissionResults)
-                chain.process(request)
+        if(!request.isRejectRequest) {
+            val normalPermissions = request.requestPermissions.filter { permission ->
+                !SpecialUtil.isSpecialPermission(permission)
             }
-        })
+
+            request.getRequestStepCallbackManager().dispatchRequestStep { callback ->
+                callback.onRequestPermissions(request, normalPermissions)
+            }
+
+            request.getProxyFragment().requestNormalPermissions(normalPermissions, object : IPermissionResultsCallback {
+                override fun onPermissionResults(permissionResults: List<PermissionResult>) {
+                    request.divisionRequestPermissionsByPermissionResults(permissionResults)
+                    chain.process(request)
+                }
+            })
+        }else {
+            chain.process(request)
+        }
     }
 
 }

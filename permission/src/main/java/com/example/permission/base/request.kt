@@ -104,10 +104,10 @@ internal data class Request(
     val grantedPermissions: MutableList<String> = ArrayList(),
     val rejectedPermissions: MutableList<String> = ArrayList(),
     val rejectedForeverPermissions: MutableList<String> = ArrayList(),
-    var isRestart: Boolean = false,
-    var isInterrupt: Boolean = false,
-    var isFinish: Boolean = false,
-    var linkedChain: IChain? = null
+    var isRejectRequest: Boolean = false, //是否向系统请求权限
+    var isRestart: Boolean = false,//是否是再次请求
+    var isFinish: Boolean = false,//是否完成请求
+    var linkedChain: IChain? = null//关联的chain
 ) : IRequestStepCallback.Impl() {
 
     private val requestStepCallbackManager = object : IRequestStepCallbackManager {
