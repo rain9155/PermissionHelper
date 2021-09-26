@@ -50,82 +50,154 @@ class PermissionFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val binding = FragmentPermissionBinding.inflate(inflater)
+
         binding.btnRequestPermission.setOnClickListener {
-            PermissionHelper.with(this)
-                .permissions(permissions)
-                .request(object : IResultCallback {
-                    override fun onResult(isAllGrant: Boolean, grantedPermissions: List<String>, rejectedPermissions: List<String>) {
-                        showRequestPermissionsResult(isAllGrant, grantedPermissions, rejectedPermissions)
-                    }
-                })
+            requestPermissions()
         }
 
         binding.btnExplainBeforeRequest.setOnClickListener {
-            PermissionHelper.with(this)
-                .permissions(permissions)
-                .explainBeforeRequest(object : IRequestCallback {
-                    override fun onRequest(process: IRequestCallback.IRequestProcess, requestPermissions: List<String>) {
-                        showAlert(
-                            "以下申请的权限是运行时必须的，是否继续申请",
-                            getPermissionsLabel(requestPermissions),
-                            "否",
-                            DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
-                                process.requestTermination()
-                            },
-                            "是",
-                            DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
-                                process.requestContinue()
-                            }
-                        )
-                    }
-                }).request(object : IResultCallback {
-                    override fun onResult(isAllGrant: Boolean, grantedPermissions: List<String>, rejectedPermissions: List<String>) {
-                        showRequestPermissionsResult(isAllGrant, grantedPermissions, rejectedPermissions)
-                    }
-                })
+            requestPermissionsWithExplainBeforeRequest()
         }
 
         binding.btnExplainAfterRejected.setOnClickListener {
-            PermissionHelper.with(this)
-                .permissions(permissions)
-                .reCallbackAfterConfigurationChanged(false)
-                .explainAfterRejected(object : IRejectedCallback {
-                    override fun onRejected(process: IRejectedCallback.IRejectedProcess, rejectedPermissions: List<String>) {
-                        showAlert(
-                            "以下点击拒绝的权限是运行时必须的，请申请后再进行后续操作",
-                            getPermissionsLabel(rejectedPermissions),
-                            "不申请",
-                            DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
-                                process.requestTermination()
-                            },
-                            "申请",
-                            DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
-                                process.requestAgain(rejectedPermissions)
-                            }
-                        )
-                    }
-                }).explainAfterRejectedForever(object : IRejectedForeverCallback {
-                    override fun onRejectedForever(process: IRejectedForeverCallback.IRejectedForeverProcess, rejectedForeverPermissions: List<String>) {
-                        showAlert(
-                            "以下点击永久拒绝的权限是运行时必须的，请前往权限中心同意",
-                            getPermissionsLabel(rejectedForeverPermissions),
-                            "不前往",
-                            DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
-                                process.requestTermination()
-                            },
-                            "前往",
-                            DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
-                                process.gotoSettings()
-                            }
-                        )
-                    }
-                }).request(object : IResultCallback {
-                    override fun onResult(isAllGrant: Boolean, grantedPermissions: List<String>, rejectedPermissions: List<String>) {
-                        showRequestPermissionsResult(isAllGrant, grantedPermissions, rejectedPermissions)
-                    }
-                })
+            requestPermissionsWithExplainAfterRejected()
+        }
+
+        binding.btnRequestExplain.setOnClickListener {
+            requestPermissionsWithExplain()
         }
         return binding.root
+    }
+
+    private fun requestPermissions() {
+        PermissionHelper.with(this)
+            .permissions(permissions)
+            .request(object : IResultCallback {
+                override fun onResult(isAllGrant: Boolean, grantedPermissions: List<String>, rejectedPermissions: List<String>) {
+                    showRequestPermissionsResult(isAllGrant, grantedPermissions, rejectedPermissions)
+                }
+            })
+    }
+
+    private fun requestPermissionsWithExplainBeforeRequest() {
+        PermissionHelper.with(this)
+            .permissions(permissions)
+            .explainBeforeRequest(object : IRequestCallback {
+                override fun onRequest(process: IRequestCallback.IRequestProcess, requestPermissions: List<String>) {
+                    showAlert(
+                        "以下申请的权限是运行时必须的，是否继续申请",
+                        getPermissionsLabel(requestPermissions),
+                        "否",
+                        DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
+                            process.rejectRequest()
+                        },
+                        "是",
+                        DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
+                            process.requestContinue()
+                        }
+                    )
+                }
+            }).request(object : IResultCallback {
+                override fun onResult(isAllGrant: Boolean, grantedPermissions: List<String>, rejectedPermissions: List<String>) {
+                    showRequestPermissionsResult(isAllGrant, grantedPermissions, rejectedPermissions)
+                }
+            })
+    }
+
+    private fun requestPermissionsWithExplainAfterRejected() {
+        PermissionHelper.with(this)
+            .permissions(permissions)
+            .reCallbackAfterConfigurationChanged(false)
+            .explainAfterRejected(object : IRejectedCallback {
+                override fun onRejected(process: IRejectedCallback.IRejectedProcess, rejectedPermissions: List<String>) {
+                    showAlert(
+                        "以下点击拒绝的权限是运行时必须的，请申请后再进行后续操作",
+                        getPermissionsLabel(rejectedPermissions),
+                        "不申请",
+                        DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
+                            process.rejectRequest()
+                        },
+                        "申请",
+                        DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
+                            process.requestAgain(rejectedPermissions)
+                        }
+                    )
+                }
+            }).explainAfterRejectedForever(object : IRejectedForeverCallback {
+                override fun onRejectedForever(process: IRejectedForeverCallback.IRejectedForeverProcess, rejectedForeverPermissions: List<String>) {
+                    showAlert(
+                        "以下点击永久拒绝的权限是运行时必须的，请前往权限中心同意",
+                        getPermissionsLabel(rejectedForeverPermissions),
+                        "不前往",
+                        DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
+                            process.rejectRequest()
+                        },
+                        "前往",
+                        DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
+                            process.gotoSettings()
+                        }
+                    )
+                }
+            }).request(object : IResultCallback {
+                override fun onResult(isAllGrant: Boolean, grantedPermissions: List<String>, rejectedPermissions: List<String>) {
+                    showRequestPermissionsResult(isAllGrant, grantedPermissions, rejectedPermissions)
+                }
+            })
+    }
+
+    private fun requestPermissionsWithExplain() {
+        PermissionHelper.with(this)
+            .permissions(permissions)
+            .explainBeforeRequest(object : IRequestCallback {
+                override fun onRequest(process: IRequestCallback.IRequestProcess, requestPermissions: List<String>) {
+                    showAlert(
+                        "以下申请的权限是运行时必须的，是否继续申请",
+                        getPermissionsLabel(requestPermissions),
+                        "否",
+                        DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
+                            process.rejectRequest()
+                        },
+                        "是",
+                        DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
+                            process.requestContinue()
+                        }
+                    )
+                }
+            }).explainAfterRejected(object : IRejectedCallback {
+                override fun onRejected(process: IRejectedCallback.IRejectedProcess, rejectedPermissions: List<String>) {
+                    showAlert(
+                        "以下点击拒绝的权限是运行时必须的，请申请后再进行后续操作",
+                        getPermissionsLabel(rejectedPermissions),
+                        "不申请",
+                        DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
+                            process.rejectRequest()
+                        },
+                        "申请",
+                        DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
+                            process.requestAgain(rejectedPermissions)
+                        }
+                    )
+                }
+            }).explainAfterRejectedForever(object : IRejectedForeverCallback {
+                override fun onRejectedForever(process: IRejectedForeverCallback.IRejectedForeverProcess, rejectedForeverPermissions: List<String>) {
+                    showAlert(
+                        "以下点击永久拒绝的权限是运行时必须的，请前往权限中心同意",
+                        getPermissionsLabel(rejectedForeverPermissions),
+                        "不前往",
+                        DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
+                            process.rejectRequest()
+                        },
+                        "前往",
+                        DialogInterface.OnClickListener { _: DialogInterface?, _: Int ->
+                            process.gotoSettings()
+                        }
+                    )
+                }
+            }).request(object : IResultCallback {
+                override fun onResult(isAllGrant: Boolean, grantedPermissions: List<String>, rejectedPermissions: List<String>) {
+                    showRequestPermissionsResult(isAllGrant, grantedPermissions, rejectedPermissions)
+                }
+            })
     }
 
     override fun onDestroy() {

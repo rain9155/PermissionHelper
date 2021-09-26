@@ -27,4 +27,10 @@
         android:layout_height="wrap_content"
         android:text="申请权限，拒绝后解释"/>
 
+    <Button
+        android:id="@+id/btn_request_explain"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="申请权限，申请前和拒绝后解释"/>
+
 </LinearLayout>
