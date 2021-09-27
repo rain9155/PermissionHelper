@@ -87,7 +87,7 @@ PermissionHelper.with(this)
     })
 ```
 
-`IRejectedCallback#onRejected`回调中的process参数是`IRejectedProcess`类型，它里面只有两个方法：`IRejectedProcess#requestAgain`方法和`IRejectedProcess#rejectRequest`方法，用户同意再次申请权限时调用`IRejectedProcess#requestAgain`方法传入继续申请的权限恢复权限申请流程，当用户不同意再次申请权限时，调用`IRejectedProcess#rejectRequest`方法终止权限的申请流程，紧接着`IResultCallback#onResult`就会回调，可以在里面做最终的结果处理，如果用户同意再次申请权限，但在二次权限申请的过程中勾选了**不再询问选项**(android 11后连续点击多次拒绝等同于勾选了Dont Ask again)，那么该权限就会被用户**永久拒绝**，下一次请求时不会出现该权限的申请框，针对这种情况，我们需要引导用户到设置界面同意该权限，`PermissionHelper`支持在调用`request`方法前拼接一个`explainAfterRejectedForever`方法，传入`IRejectedForeverCallback`实现，当用户永久拒绝了某些权限后，`IRejectedForeverCallback#onRejectedForever`方法就会回调，在该回调中，你可以弹出弹窗再次向用户解释被拒绝的权限对应用的必要性：
+`IRejectedCallback#onRejected`回调中的process参数是`IRejectedProcess`类型，它里面只有两个方法：`IRejectedProcess#requestAgain`方法和`IRejectedProcess#rejectRequest`方法，用户同意再次申请权限时调用`IRejectedProcess#requestAgain`方法传入继续申请的权限再次发起权限申请流程，当用户不同意再次申请权限时，调用`IRejectedProcess#rejectRequest`方法终止权限的申请流程，紧接着`IResultCallback#onResult`就会回调，可以在里面做最终的结果处理，如果用户同意再次申请权限，但在二次权限申请的过程中勾选了**不再询问选项**(android 11后连续点击多次拒绝等同于勾选了Dont Ask again)，那么该权限就会被用户**永久拒绝**，下一次请求时不会出现该权限的申请框，针对这种情况，我们需要引导用户到设置界面同意该权限，`PermissionHelper`支持在调用`request`方法前拼接一个`explainAfterRejectedForever`方法，传入`IRejectedForeverCallback`实现，当用户永久拒绝了某些权限后，`IRejectedForeverCallback#onRejectedForever`方法就会回调，在该回调中，你可以弹出弹窗再次向用户解释被拒绝的权限对应用的必要性：
 
 ```kotlin
 val permissions = listOf(Manifest.permission.CALL_PHONE,Manifest.permission.WRITE_SETTINGS)
