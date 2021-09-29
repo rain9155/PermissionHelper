@@ -162,7 +162,7 @@ internal class ProxyFragmentProvider : IRequestStepCallback.Impl {
     }
 
     @IntDef(value = [VERSION_AUTO, VERSION_V1, VERSION_V2])
-    @Target(AnnotationTarget.PROPERTY, AnnotationTarget.LOCAL_VARIABLE)
+    @Target(AnnotationTarget.FIELD, AnnotationTarget.VALUE_PARAMETER)
     @Retention(AnnotationRetention.SOURCE)
     annotation class Version
 }
